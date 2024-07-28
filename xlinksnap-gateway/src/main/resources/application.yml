@@ -1,6 +1,0 @@
-spring:
-  application:
-    name: XLinkSnapGateWay
-
-server:
-  port: 8082
