@@ -1,4 +1,4 @@
-package com.wz.xlinksnap.model.dto.resp;
+package com.wz.xlinksnap.model.dto.req;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;

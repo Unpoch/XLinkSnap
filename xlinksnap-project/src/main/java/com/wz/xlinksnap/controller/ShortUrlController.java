@@ -2,16 +2,16 @@ package com.wz.xlinksnap.controller;
 
 
 import com.wz.xlinksnap.common.result.Result;
-import com.wz.xlinksnap.model.dto.req.CreateShortUrlResp;
-import com.wz.xlinksnap.model.dto.resp.CreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
+import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
+import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
 import com.wz.xlinksnap.service.ShortUrlService;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * <p>
@@ -49,6 +49,13 @@ public class ShortUrlController {
     /**
      * TODO：批量创建短链接
      */
+    @PostMapping("/batchCreateShortUrl")
+    public Result<BatchCreateShortUrlResp> batchCreateShortUrl(@RequestBody
+                                                               BatchCreateShortUrlReq batchCreateShortUrlReq) {
+        BatchCreateShortUrlResp batchCreateShortUrlResp =
+                shortUrlService.batchCreateShortUrl(batchCreateShortUrlReq);
+        return Result.success(batchCreateShortUrlResp);
+    }
 
     /**
      * TODO：分页查询短链

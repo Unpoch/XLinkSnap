@@ -2,4 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.wz.xlinksnap.mapper.ShortUrlMapper">
 
+
+    <insert id="batchInsertShortUrl" parameterType="java.util.List">
+        INSERT INTO t_short_url (surl_id, surl, lurl, valid_time, PV, UV, VV, IP, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.surlId}, #{item.surl}, #{item.lurl}, #{item.validTime}, #{item.PV}, #{item.UV}, #{item.VV},
+            #{item.IP}, #{item.createTime}, #{item.updateTime})
+        </foreach>
+    </insert>
+
 </mapper>

@@ -6,8 +6,11 @@ import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.common.util.Base62Converter;
 import com.wz.xlinksnap.common.util.TimeUtil;
 import com.wz.xlinksnap.common.util.UrlUtil;
-import com.wz.xlinksnap.model.dto.req.CreateShortUrlResp;
-import com.wz.xlinksnap.model.dto.resp.CreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlMappingResp;
+import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
+import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
+import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.mapper.ShortUrlMapper;
 import com.wz.xlinksnap.service.BloomFilterService;
@@ -15,19 +18,21 @@ import com.wz.xlinksnap.service.IdGenerationService;
 import com.wz.xlinksnap.service.MetricsService;
 import com.wz.xlinksnap.service.ShortUrlService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.WebUtils;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,6 +44,7 @@ import java.util.concurrent.TimeUnit;
  * @since 2024-07-27
  */
 @Service
+@Slf4j
 public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> implements ShortUrlService {
 
     @Autowired
@@ -46,6 +52,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
 
     @Autowired
     private MetricsService metricsService;
+
+    @Autowired
+    private ShortUrlMapper shortUrlMapper;
 
     @Autowired
     private BloomFilterService bloomFilterService;
@@ -104,6 +113,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .lurl(lurl)
                     .build();
         } catch (Exception e) {
+            log.error(e.getMessage());
             throw new ConditionException("生成短链失败！");
         } finally {
             lock.unlock();
@@ -128,13 +138,93 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
             //3.重定向
             ((HttpServletResponse) response).sendRedirect(lurl);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             throw new ConditionException("403", "页面找不到！！");
         }
     }
 
+    /**
+     * 批量创建短链
+     * 目前仅支持同一域名下的短链创建
+     * TODO:是否需要分布式锁？
+     */
+    @Override
+    public BatchCreateShortUrlResp batchCreateShortUrl(BatchCreateShortUrlReq batchCreateShortUrlReq) {
+        List<String> lurlList = batchCreateShortUrlReq.getLurlList();
+        String domain = batchCreateShortUrlReq.getDomain();
+        LocalDateTime validTime = batchCreateShortUrlReq.getValidTime();
+        List<ShortUrl> shortUrlList = new ArrayList<>();
+        List<BatchCreateShortUrlMappingResp> result = new ArrayList<>();
+        //1.遍历集合，二义性检查
+        //2.每个元素，生成唯一id，转换62进制，并生成短链
+        lurlList.forEach(lurl -> {
+            String surl = "";
+            //如果lurl已经转换过
+            if (bloomFilterService.containLUrl(lurl)) {
+                //TODO:是否有必要如此做，误判？抛异常？
+                surl = redisTemplate.opsForValue().get(RedisConstant.LONG_URL_KEY + lurl);
+                if (surl == null) { //缓存中也没有
+                    return;//相当于continue
+                }
+            }
+            long surlId = idGenerationService.generateId();
+            String suffix = Base62Converter.encode(surlId);
+            //不为空说明从缓存中拿到了，说明布隆过滤器误判？
+            if (StringUtils.isEmpty(surl)) {
+                surl = UrlUtil.buildShortUrl(domain, suffix);
+            }
+            //创建短链 - 长链映射对象
+            BatchCreateShortUrlMappingResp urlMappingResp = BatchCreateShortUrlMappingResp.builder()
+                    .lurl(lurl)
+                    .surl(surl)
+                    .build();
+            result.add(urlMappingResp);//添加到结果中
+            //创建ShortUrl对象
+            ShortUrl shortUrl = new ShortUrl()
+                    .setLurl(lurl)
+                    .setSurl(surl)
+                    .setSurlId(surlId)
+                    .setValidTime(validTime)
+                    .setPV(0)
+                    .setUV(0)
+                    .setVV(0)
+                    .setIP(0);
+            shortUrlList.add(shortUrl);
+        });
+        //3.批量插入数据库（异步执行）
+        batchInsertShortUrl(shortUrlList);
+        //4.批量添加到缓存和布隆过滤器中
+        batchAddLUrlTOCacheAndBloom(lurlList);
+        //5.构建响应对象返回
+        return BatchCreateShortUrlResp.builder().mappingUrlList(result).build();
+    }
 
-    private ShortUrl getShortUrlBySurlId(Long surlId) {
+    /**
+     * 批量添加lurl到布隆过滤器和缓存中
+     */
+    private void batchAddLUrlTOCacheAndBloom(List<String> lurlList) {
+        lurlList.forEach(lurl -> {
+            // 添加到布隆过滤器
+            bloomFilterService.addLUrl(lurl);
+            // 添加到缓存
+            redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurl, lurl);
+        });
+    }
+
+    /**
+     * 批量插入数据库
+     */
+    @Override
+    public void batchInsertShortUrl(List<ShortUrl> shortUrlList) {
+        shortUrlMapper.batchInsertShortUrl(shortUrlList);
+    }
+
+
+    /**
+     * 根据短链id获取短链对象
+     */
+    @Override
+    public ShortUrl getShortUrlBySurlId(Long surlId) {
         return baseMapper.selectOne(new LambdaQueryWrapper<ShortUrl>()
                 .eq(ShortUrl::getSurlId, surlId));
     }

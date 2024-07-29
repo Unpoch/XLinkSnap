@@ -3,6 +3,8 @@ package com.wz.xlinksnap.mapper;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
+import java.util.List;
+
 /**
  * <p>
  * 长短链接映射表 Mapper 接口
@@ -13,4 +15,5 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface ShortUrlMapper extends BaseMapper<ShortUrl> {
 
+    void batchInsertShortUrl(List<ShortUrl> shortUrlList);
 }

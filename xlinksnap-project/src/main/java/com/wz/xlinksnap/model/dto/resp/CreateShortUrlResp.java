@@ -1,4 +1,4 @@
-package com.wz.xlinksnap.model.dto.req;
+package com.wz.xlinksnap.model.dto.resp;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
