@@ -1,5 +1,6 @@
 package com.wz.xlinksnap.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.common.util.Base62Converter;
@@ -11,6 +12,7 @@ import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.mapper.ShortUrlMapper;
 import com.wz.xlinksnap.service.BloomFilterService;
 import com.wz.xlinksnap.service.IdGenerationService;
+import com.wz.xlinksnap.service.MetricsService;
 import com.wz.xlinksnap.service.ShortUrlService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.redisson.api.RLock;
@@ -18,7 +20,13 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.WebUtils;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +43,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
 
     @Autowired
     private IdGenerationService idGenerationService;
+
+    @Autowired
+    private MetricsService metricsService;
 
     @Autowired
     private BloomFilterService bloomFilterService;
@@ -97,5 +108,34 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         } finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * 重定向短链接到长链接
+     * 统计指标
+     */
+    @Override
+    public void redirect(String surl, ServletRequest request, ServletResponse response) {
+        try {
+            //1.统计指标 PV,UV,VV,IP
+            metricsService.setDailyMetrics(surl, (HttpServletRequest) request, (HttpServletResponse) response);
+            //2.查询短链对应的长链
+            //获取短链的suffix -> base62 变成唯一id -> 根据唯一id查询长链（缓存？MySQL）
+            String suffix = UrlUtil.getShortUrlSuffix(surl);
+            long surlId = Base62Converter.decode(suffix);
+            ShortUrl shortUrl = getShortUrlBySurlId(surlId);
+            String lurl = shortUrl.getLurl();
+            //3.重定向
+            ((HttpServletResponse) response).sendRedirect(lurl);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ConditionException("403", "页面找不到！！");
+        }
+    }
+
+
+    private ShortUrl getShortUrlBySurlId(Long surlId) {
+        return baseMapper.selectOne(new LambdaQueryWrapper<ShortUrl>()
+                .eq(ShortUrl::getSurlId, surlId));
     }
 }

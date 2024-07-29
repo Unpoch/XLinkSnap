@@ -55,21 +55,25 @@ public class ShortUrl implements Serializable {
     /**
      * Page View
      */
+    @TableField("PV")
     private Integer PV;
 
     /**
      * Unique Visitor
      */
+    @TableField("UV")
     private Integer UV;
 
     /**
      * Visit View
      */
+    @TableField("VV")
     private Integer VV;
 
     /**
      * IP（访问链接的独立IP数）
      */
+    @TableField("IP")
     private Integer IP;
 
     /**
