@@ -70,5 +70,9 @@ public class ShortUrlController {
         return Result.success(pageShortUrlResp);
     }
 
+    /**
+     * TODO：查询分组内短链数量
+     */
+
 }
 
