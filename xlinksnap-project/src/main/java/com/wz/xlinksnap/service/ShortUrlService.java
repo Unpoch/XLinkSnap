@@ -1,9 +1,11 @@
 package com.wz.xlinksnap.service;
 
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -30,4 +32,6 @@ public interface ShortUrlService extends IService<ShortUrl> {
     ShortUrl getShortUrlBySurlId(Long surlId);
 
     void batchInsertShortUrl(List<ShortUrl> shortUrlList);
+
+    PageShortUrlResp<ShortUrl> pageShortUrl(PageShortUrlReq pageShortUrlReq);
 }

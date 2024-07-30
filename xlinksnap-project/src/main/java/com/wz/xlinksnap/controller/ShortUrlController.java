@@ -3,9 +3,12 @@ package com.wz.xlinksnap.controller;
 
 import com.wz.xlinksnap.common.result.Result;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
+import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.service.ShortUrlService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -60,7 +63,12 @@ public class ShortUrlController {
     /**
      * TODO：分页查询短链
      */
-
+    @GetMapping("/pageShortUrl")
+    public Result<PageShortUrlResp<ShortUrl>> pageShortUrl(PageShortUrlReq pageShortUrlReq) {
+        // pageShortUrlReq.setUserId(SaToken获取UserId)？是否需要userId？
+        PageShortUrlResp<ShortUrl> pageShortUrlResp = shortUrlService.pageShortUrl(pageShortUrlReq);
+        return Result.success(pageShortUrlResp);
+    }
 
 }
 

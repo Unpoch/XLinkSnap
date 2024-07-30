@@ -1,6 +1,8 @@
 package com.wz.xlinksnap.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wz.xlinksnap.common.annotation.DistributedRLock;
 import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.common.exception.ConditionException;
@@ -8,10 +10,12 @@ import com.wz.xlinksnap.common.util.Base62Converter;
 import com.wz.xlinksnap.common.util.TimeUtil;
 import com.wz.xlinksnap.common.util.UrlUtil;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlMappingResp;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.mapper.ShortUrlMapper;
 import com.wz.xlinksnap.service.BloomFilterService;
@@ -228,6 +232,26 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     @Override
     public void batchInsertShortUrl(List<ShortUrl> shortUrlList) {
         shortUrlMapper.batchInsertShortUrl(shortUrlList);
+    }
+
+    /**
+     * 分页查询短链
+     */
+    @Override
+    public PageShortUrlResp<ShortUrl> pageShortUrl(PageShortUrlReq pageShortUrlReq) {
+        //1.构建分页参数
+        Integer pageNo = pageShortUrlReq.getPageNo();
+        Integer pageSize = pageShortUrlReq.getPageSize();
+        Long groupId = pageShortUrlReq.getGroupId();
+        Page<ShortUrl> pageParams = new Page<>(pageNo, pageSize);
+        //2.分页查询
+        IPage<ShortUrl> page = baseMapper.selectPage(pageParams, new LambdaQueryWrapper<ShortUrl>()
+                .eq(groupId != null, ShortUrl::getGroupId, groupId));
+        return PageShortUrlResp
+                .<ShortUrl>builder()
+                .total(page.getTotal())
+                .records(page.getRecords())
+                .build();
     }
 
 
