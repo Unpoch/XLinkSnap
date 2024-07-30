@@ -23,4 +23,9 @@ public class CreateShortUrlResp {
      * 长链
      */
     private String lurl;
+
+    /**
+     * 分组id
+     */
+    private Long groupId;
 }

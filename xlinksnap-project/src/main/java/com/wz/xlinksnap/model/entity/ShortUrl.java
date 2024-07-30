@@ -47,6 +47,11 @@ public class ShortUrl implements Serializable {
     private String lurl;
 
     /**
+     * 分组id
+     */
+    private Long groupId;
+
+    /**
      * 有效期
      */
     private LocalDateTime validTime;

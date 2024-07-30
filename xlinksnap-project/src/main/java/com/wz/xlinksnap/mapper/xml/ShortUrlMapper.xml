@@ -7,7 +7,7 @@
         INSERT INTO t_short_url (surl_id, surl, lurl, valid_time, PV, UV, VV, IP, create_time, update_time)
         VALUES
         <foreach collection="list" item="item" index="index" separator=",">
-            (#{item.surlId}, #{item.surl}, #{item.lurl}, #{item.validTime}, #{item.PV}, #{item.UV}, #{item.VV},
+            (#{item.surlId}, #{item.surl}, #{item.lurl}, #{item.groupId},#{item.validTime}, #{item.PV}, #{item.UV}, #{item.VV},
             #{item.IP}, #{item.createTime}, #{item.updateTime})
         </foreach>
     </insert>

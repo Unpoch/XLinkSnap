@@ -76,6 +76,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     public CreateShortUrlResp createShortUrl(CreateShortUrlReq createShortUrlReq) {
         String lurl = createShortUrlReq.getLurl();
         String domain = createShortUrlReq.getDomain();
+        Long groupId = createShortUrlReq.getGroupId();
         LocalDateTime validTime = createShortUrlReq.getValidTime();
         //分布式锁
         // RLock lock = redissonClient.getLock(RedisConstant.CREATE_SURL_LOCK + lurl);
@@ -101,7 +102,12 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .setSurlId(surlId)
                     .setLurl(lurl)
                     .setSurl(surl)
-                    .setValidTime(validTime);
+                    .setGroupId(groupId)
+                    .setValidTime(validTime)
+                    .setPV(0)
+                    .setUV(0)
+                    .setVV(0)
+                    .setIP(0);
             baseMapper.insert(shortUrl);
             //5.添加到布隆过滤器 和 缓存中 TODO：异步执行
             bloomFilterService.addLUrl(lurl);
@@ -113,6 +119,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .builder()
                     .surl(surl)
                     .lurl(lurl)
+                    .groupId(groupId)
                     .build();
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -154,6 +161,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     public BatchCreateShortUrlResp batchCreateShortUrl(BatchCreateShortUrlReq batchCreateShortUrlReq) {
         List<String> lurlList = batchCreateShortUrlReq.getLurlList();
         String domain = batchCreateShortUrlReq.getDomain();
+        Long groupId = batchCreateShortUrlReq.getGroupId();
         LocalDateTime validTime = batchCreateShortUrlReq.getValidTime();
         List<ShortUrl> shortUrlList = new ArrayList<>();
         List<BatchCreateShortUrlMappingResp> result = new ArrayList<>();
@@ -186,6 +194,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .setLurl(lurl)
                     .setSurl(surl)
                     .setSurlId(surlId)
+                    .setGroupId(groupId)
                     .setValidTime(validTime)
                     .setPV(0)
                     .setUV(0)
@@ -198,7 +207,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         //4.批量添加到缓存和布隆过滤器中
         batchAddLUrlTOCacheAndBloom(lurlList);
         //5.构建响应对象返回
-        return BatchCreateShortUrlResp.builder().mappingUrlList(result).build();
+        return BatchCreateShortUrlResp.builder().mappingUrlList(result).groupId(groupId).build();
     }
 
     /**

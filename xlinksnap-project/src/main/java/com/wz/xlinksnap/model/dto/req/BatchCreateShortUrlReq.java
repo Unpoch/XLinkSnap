@@ -28,6 +28,11 @@ public class BatchCreateShortUrlReq {
     private String domain;
 
     /**
+     * 分组id
+     */
+    private Long groupId;
+
+    /**
      * 有效期
      */
     private LocalDateTime validTime;

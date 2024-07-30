@@ -28,6 +28,11 @@ public class CreateShortUrlReq {
     private String lurl;
 
     /**
+     * 分组id
+     */
+    private Long groupId;
+
+    /**
      * 有效期
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

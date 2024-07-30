@@ -17,6 +17,11 @@ import java.util.List;
 public class BatchCreateShortUrlResp {
 
     /**
+     * 分组id
+     */
+    private Long groupId;
+
+    /**
      * 短链-长链映射集合
      */
     private List<BatchCreateShortUrlMappingResp> mappingUrlList;
