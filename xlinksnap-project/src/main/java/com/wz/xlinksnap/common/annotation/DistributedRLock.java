@@ -6,12 +6,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 分布式锁写锁实现
+ * 分布式锁可重入锁注解实现
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RWriteLock {
-    String value();
+public @interface DistributedRLock {
+
+    String prefix();
     long waitTime() default -1;
     long leaseTime() default -1;
 }

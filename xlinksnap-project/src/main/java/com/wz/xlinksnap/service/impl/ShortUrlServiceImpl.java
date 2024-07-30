@@ -1,6 +1,7 @@
 package com.wz.xlinksnap.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.wz.xlinksnap.common.annotation.DistributedRLock;
 import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.common.util.Base62Converter;
@@ -71,13 +72,14 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
      */
     //TODO: 分布式锁注解实现
     @Override
+    @DistributedRLock(prefix = RedisConstant.CREATE_SURL_LOCK)
     public CreateShortUrlResp createShortUrl(CreateShortUrlReq createShortUrlReq) {
         String lurl = createShortUrlReq.getLurl();
         String domain = createShortUrlReq.getDomain();
         LocalDateTime validTime = createShortUrlReq.getValidTime();
         //分布式锁
-        RLock lock = redissonClient.getLock(RedisConstant.CREATE_SURL_LOCK + lurl);
-        lock.lock();
+        // RLock lock = redissonClient.getLock(RedisConstant.CREATE_SURL_LOCK + lurl);
+        // lock.lock();
         try {
             //0.二义性检查，是否已经为该长链生成短链
             //布隆过滤器判断，如果已经存在，则直接查询缓存（数据库）中的返回
@@ -116,7 +118,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
             log.error(e.getMessage());
             throw new ConditionException("生成短链失败！");
         } finally {
-            lock.unlock();
+            // lock.unlock();
         }
     }
 
