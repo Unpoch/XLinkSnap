@@ -8,8 +8,8 @@ import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -27,6 +27,9 @@ public class MessageServiceImpl implements MessageService {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    @Value("${spring.mail.username}")
+    private String senderEmail;
+
     /**
      * 发送邮箱验证码
      */
@@ -37,6 +40,7 @@ public class MessageServiceImpl implements MessageService {
         redisTemplate.opsForValue().set(RedisConstant.USER_VERIFY_CODE + email,code,5, TimeUnit.MINUTES);
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
+        message.setFrom(senderEmail);
         message.setSubject("XLinkSnap 验证码");
         message.setText("你的验证码是：" + code + "，有效期：五分钟");
         mailSender.send(message);
@@ -57,6 +61,7 @@ public class MessageServiceImpl implements MessageService {
     public boolean verifyCode(String s,String code) {
         String sendCode = redisTemplate.opsForValue().get(RedisConstant.USER_VERIFY_CODE + s);
         if(StringUtils.isEmpty(sendCode)) {
+            log.info("验证码已过期！发送的验证码：" + sendCode + "，输入的验证码：" + code + "，邮箱或者手机：" + s);
             throw new ConditionException("验证码已过期！请重新发送");
         }
         return code.equals(sendCode);

@@ -14,17 +14,20 @@ spring:
     host: 192.168.94.130
     timeout: 5000
   mail:
-    host: smtp.gmail.com
+    default-encoding: UTF-8
+    host: smtp.qq.com
     port: 465
-    username: xxxxxxx
-    password: xxxxxxx
+    username: xxx@qq.com
+    password: xxxx
     properties:
       mail:
         smtp:
           auth: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
           starttls:
             enable: true
-
+            required: true
 
 server:
   port: 8081

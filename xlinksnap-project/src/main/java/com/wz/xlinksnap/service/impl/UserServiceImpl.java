@@ -51,6 +51,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         //2.验证码验证
         if (!messageService.verifyCode(email == null ? phone : email, code)) {
+            log.info("验证码错误！输入的验证码：" + code);
             throw new ConditionException("验证码错误！");
         }
         //3.密码加密
