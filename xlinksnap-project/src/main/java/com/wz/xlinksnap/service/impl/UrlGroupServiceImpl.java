@@ -5,6 +5,7 @@ import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.mapper.UrlGroupMapper;
 import com.wz.xlinksnap.model.dto.req.AddUrlGroupReq;
 import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
+import com.wz.xlinksnap.model.dto.req.UpdateUrlGroupReq;
 import com.wz.xlinksnap.model.dto.resp.AddUrlGroupResp;
 import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.model.entity.UrlGroup;
@@ -67,5 +68,26 @@ public class UrlGroupServiceImpl extends ServiceImpl<UrlGroupMapper, UrlGroup> i
         return baseMapper.selectList(new LambdaQueryWrapper<UrlGroup>()
                 .eq(UrlGroup::getUserId, userId)
                 .in(UrlGroup::getId, groupIds));
+    }
+
+    /**
+     * 更新短链分组
+     */
+    @Override
+    public void updateUrlGroup(UpdateUrlGroupReq updateUrlGroupReq) {
+        //1.获取参数
+        Long userId = updateUrlGroupReq.getUserId();
+        String name = updateUrlGroupReq.getName();
+        //2.看是否已存在分组
+        List<UrlGroup> urlGroupList = getUrlGroupListByUserId(userId);
+        Set<String> nameSet = urlGroupList.stream().map(UrlGroup::getName).collect(Collectors.toSet());
+        if(nameSet.contains(name)) {
+            throw new ConditionException("分组已存在");
+        }
+        //3.更新数据库
+        UrlGroup urlGroup = new UrlGroup().setUserId(userId)
+                .setName(name)
+                .setId(updateUrlGroupReq.getGroupId());
+        baseMapper.updateById(urlGroup);
     }
 }

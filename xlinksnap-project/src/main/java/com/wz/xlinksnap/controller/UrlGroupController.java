@@ -1,9 +1,11 @@
 package com.wz.xlinksnap.controller;
 
 
+import com.baomidou.mybatisplus.extension.api.R;
 import com.wz.xlinksnap.common.result.Result;
 import com.wz.xlinksnap.model.dto.req.AddUrlGroupReq;
 import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
+import com.wz.xlinksnap.model.dto.req.UpdateUrlGroupReq;
 import com.wz.xlinksnap.model.dto.resp.AddUrlGroupResp;
 import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.service.UrlGroupService;
@@ -43,13 +45,20 @@ public class UrlGroupController {
     }
 
 
-
     /**
      * 更新短链分组
      */
+    @PostMapping("/updateUrlGroup")
+    public Result<String> updateUrlGroup(@RequestBody UpdateUrlGroupReq updateUrlGroupReq) {
+        urlGroupService.updateUrlGroup(updateUrlGroupReq);
+        return Result.success();
+    }
 
     /**
-     * 删除短链分组
+     * TODO：删除短链分组
+     * 这里因为数据库表t_url_group没有和短链id做关联，因此后续考虑再做
+     * 或者直接删除t_short_url中groupId的短链，然后t_url_group中删除groupId这一行记录
+     * 是否需要增加短链的isDeleted字段？进行逻辑删除，方便后续恢复？
      */
 
 }
