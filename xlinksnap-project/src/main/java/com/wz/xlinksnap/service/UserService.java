@@ -29,4 +29,6 @@ public interface UserService extends IService<User> {
     LoginResp login(LoginReq loginReq);
 
     User getByUsername(String username);
+
+    void logout();
 }

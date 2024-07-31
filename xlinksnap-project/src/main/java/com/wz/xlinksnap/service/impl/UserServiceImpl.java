@@ -102,6 +102,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
+     * 注销
+     */
+    @Override
+    public void logout() {
+        StpUtil.logout();
+    }
+
+    /**
      * 根据phone查询User
      */
     @Override

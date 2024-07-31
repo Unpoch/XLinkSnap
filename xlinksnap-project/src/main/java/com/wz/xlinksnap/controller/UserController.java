@@ -44,6 +44,15 @@ public class UserController {
     }
 
     /**
+     * 注销
+     */
+    @PostMapping("/logout")
+    public Result<String> logout() {
+        userService.logout();
+        return Result.success();
+    }
+
+    /**
      * 发送邮箱验证码
      */
     @GetMapping("/sendCodeByEmail")
