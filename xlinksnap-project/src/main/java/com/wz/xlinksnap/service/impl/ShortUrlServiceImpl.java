@@ -11,11 +11,13 @@ import com.wz.xlinksnap.common.util.TimeUtil;
 import com.wz.xlinksnap.common.util.UrlUtil;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlMappingResp;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
+import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.mapper.ShortUrlMapper;
 import com.wz.xlinksnap.service.BloomFilterService;
@@ -23,6 +25,10 @@ import com.wz.xlinksnap.service.IdGenerationService;
 import com.wz.xlinksnap.service.MetricsService;
 import com.wz.xlinksnap.service.ShortUrlService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
@@ -92,7 +98,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                 //长短链接的一一映射关系
                 String surl = redisTemplate.opsForValue().get(RedisConstant.LONG_URL_KEY + lurl);
                 if (surl != null) //真的会出现这种情况？布隆过滤器和缓存是同步写入的
+                {
                     return CreateShortUrlResp.builder().surl(surl).lurl(lurl).build();
+                }
                 //TODO：进一步查询数据库确认长链接是否存在
             }
             //1.生成全局唯一id
@@ -252,6 +260,41 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                 .total(page.getTotal())
                 .records(page.getRecords())
                 .build();
+    }
+
+    /**
+     * 查询分组下短链数量
+     */
+    @Override
+    public List<QueryGroupShortUrlCountResp> queryGroupShortUrlCount(
+            QueryGroupShortUrlCountReq queryGroupShortUrlCountReq) {
+        //1.获取参数
+        Long userId = queryGroupShortUrlCountReq.getUserId();
+        List<Long> groupIdList = queryGroupShortUrlCountReq.getGroupIdList();
+        Set<Long> groupIdSet = new HashSet<>(groupIdList);
+        //2.根据groupId集合查询所有短链
+        List<ShortUrl> shortUrlList = getShortUrlListByGroupIds(groupIdSet);
+        //3.映射groupId -> ShortUrl的个数
+        Map<Long, Long> countMap = shortUrlList.stream().collect(Collectors.groupingBy(ShortUrl::getGroupId,
+                Collectors.counting()));//按照groupId分组后统计个数
+        //4.构建响应对象
+        List<QueryGroupShortUrlCountResp> list = countMap.entrySet().stream()
+                .map(entry -> QueryGroupShortUrlCountResp
+                        .builder()
+                        .groupId(entry.getKey())
+                        .shortUrlCount(entry.getValue().intValue())
+                        .build())
+                .collect(Collectors.toList());
+        return list;
+    }
+
+    /**
+     * 根据短链分组id集合获取所有短链
+     */
+    @Override
+    public List<ShortUrl> getShortUrlListByGroupIds(Set<Long> groupIds) {
+        return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
+                .in(ShortUrl::getGroupId, groupIds));
     }
 
 

@@ -4,12 +4,15 @@ package com.wz.xlinksnap.controller;
 import com.wz.xlinksnap.common.result.Result;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
+import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.service.ShortUrlService;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -71,8 +74,15 @@ public class ShortUrlController {
     }
 
     /**
-     * TODO：查询分组内短链数量
+     * 查询分组下所有短链数量
      */
+    @GetMapping("/queryGroupShortUrlCount")
+    public Result<List<QueryGroupShortUrlCountResp>> queryGroupShortUrlCount(@RequestParam
+                                                                             QueryGroupShortUrlCountReq queryGroupShortUrlCountReq) {
+        // queryGroupShortUrlCountReq.setUserId(token.getUserId);
+        List<QueryGroupShortUrlCountResp> result = shortUrlService.queryGroupShortUrlCount(queryGroupShortUrlCountReq);
+        return Result.success(result);
+    }
 
 }
 
