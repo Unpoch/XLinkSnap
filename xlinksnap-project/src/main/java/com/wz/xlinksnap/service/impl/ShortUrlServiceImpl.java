@@ -269,7 +269,6 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     public List<QueryGroupShortUrlCountResp> queryGroupShortUrlCount(
             QueryGroupShortUrlCountReq queryGroupShortUrlCountReq) {
         //1.获取参数
-        Long userId = queryGroupShortUrlCountReq.getUserId();
         List<Long> groupIdList = queryGroupShortUrlCountReq.getGroupIdList();
         Set<Long> groupIdSet = new HashSet<>(groupIdList);
         //2.根据groupId集合查询所有短链

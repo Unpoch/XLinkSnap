@@ -14,10 +14,10 @@ spring:
     host: 192.168.94.130
     timeout: 5000
   mail:
-    host: xlinksnap.wz.com
-    port: 587
-    username: Unkonwn
-    password: WZEpoch2048
+    host: smtp.gmail.com
+    port: 465
+    username: xxxxxxx
+    password: xxxxxxx
     properties:
       mail:
         smtp:

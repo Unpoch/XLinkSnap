@@ -7,12 +7,7 @@ import com.wz.xlinksnap.model.dto.req.RegisterReq;
 import com.wz.xlinksnap.model.dto.resp.LoginResp;
 import com.wz.xlinksnap.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * <p>
@@ -51,7 +46,7 @@ public class UserController {
     /**
      * 发送邮箱验证码
      */
-    @PostMapping("/sendCodeByEmail")
+    @GetMapping("/sendCodeByEmail")
     public Result<String> sendCodeByEmail(@RequestParam String email) {
         userService.sendCodeByEmail(email);
         return Result.success();
@@ -60,7 +55,7 @@ public class UserController {
     /**
      * 发送短信验证码
      */
-    @PostMapping("/sendCodeByPhone")
+    @GetMapping("/sendCodeByPhone")
     public Result<String> sendCodeByPhone(@RequestParam String phone) {
         userService.sendCodeByPhone(phone);
         return Result.success();

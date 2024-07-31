@@ -57,7 +57,7 @@ public class MessageServiceImpl implements MessageService {
     public boolean verifyCode(String s,String code) {
         String sendCode = redisTemplate.opsForValue().get(RedisConstant.USER_VERIFY_CODE + s);
         if(StringUtils.isEmpty(sendCode)) {
-            throw new ConditionException("验证码已过期！请重新发送")
+            throw new ConditionException("验证码已过期！请重新发送");
         }
         return code.equals(sendCode);
     }
