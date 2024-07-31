@@ -1,9 +1,10 @@
 package com.wz.xlinksnap.controller;
 
 
-import com.baomidou.mybatisplus.extension.api.R;
 import com.wz.xlinksnap.common.result.Result;
+import com.wz.xlinksnap.model.dto.req.LoginReq;
 import com.wz.xlinksnap.model.dto.req.RegisterReq;
+import com.wz.xlinksnap.model.dto.resp.LoginResp;
 import com.wz.xlinksnap.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,11 +30,17 @@ public class UserController {
     private UserService userService;
 
     /**
-     * TODO:登录
+     * 登录
+     * TODO：支持手机/邮箱验证码登录
      */
+    @PostMapping("/login")
+    public Result<LoginResp> login(@RequestBody LoginReq loginReq) {
+        LoginResp loginResp = userService.login(loginReq);
+        return Result.success(loginResp);
+    }
 
     /**
-     * TODO:注册
+     * 注册
      */
     @PostMapping("/register")
     public Result<String> register(@RequestBody RegisterReq registerReq) {

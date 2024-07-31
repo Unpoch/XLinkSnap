@@ -1,9 +1,13 @@
 package com.wz.xlinksnap.service.impl;
 
+import cn.dev33.satoken.stp.SaTokenInfo;
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.common.util.MD5Util;
+import com.wz.xlinksnap.model.dto.req.LoginReq;
 import com.wz.xlinksnap.model.dto.req.RegisterReq;
+import com.wz.xlinksnap.model.dto.resp.LoginResp;
 import com.wz.xlinksnap.model.entity.User;
 import com.wz.xlinksnap.mapper.UserMapper;
 import com.wz.xlinksnap.service.MessageService;
@@ -62,6 +66,41 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
+     * 登录
+     */
+    @Override
+    public LoginResp login(LoginReq loginReq) {
+        String username = loginReq.getUsername();
+        String password = loginReq.getPassword();
+        //1.验证是否已注册
+        User dbUser = getByUsername(username);
+        if(dbUser == null) {
+            throw new ConditionException("用户还未注册！");
+        }
+        //2.验证密码是否正确
+        if(!MD5Util.valid(password,dbUser.getPassword())) {
+            throw new ConditionException("密码不正确！");
+        }
+        //3.登录
+        StpUtil.login(dbUser.getId());
+        //4.返回token
+        SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
+        return LoginResp.builder()
+                .tokenName(tokenInfo.getTokenName())
+                .tokenValue(tokenInfo.getTokenValue())
+                .build()
+    }
+
+    /**
+     * 根据用户名获取用户（假设用户名是唯一的）
+     */
+    @Override
+    public User getByUsername(String username) {
+        return baseMapper.selectOne(new LambdaQueryWrapper<User>()
+                .eq(User::getUsername, username));
+    }
+
+    /**
      * 根据phone查询User
      */
     @Override
@@ -94,4 +133,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void sendCodeByPhone(String phone) {
         messageService.sendCodeByPhone(phone);
     }
+
+
 }
