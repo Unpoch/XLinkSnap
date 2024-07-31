@@ -1,5 +1,6 @@
 package com.wz.xlinksnap.service;
 
+import com.wz.xlinksnap.model.dto.req.RegisterReq;
 import com.wz.xlinksnap.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -13,4 +14,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface UserService extends IService<User> {
 
+    void register(RegisterReq registerReq);
+
+    User getByPhone(String phone);
+
+    User getByEmail(String email);
+
+    void sendCodeByEmail(String email);
+
+    void sendCodeByPhone(String phone);
 }

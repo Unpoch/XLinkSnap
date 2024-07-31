@@ -23,6 +23,11 @@ public interface RedisConstant {
     public static final String DAILY_METRICS = "daily-metrics:";
 
     /**
+     * 用户验证码
+     */
+    public static final String USER_VERIFY_CODE = "user-verify-code:";
+
+    /**
      * 获取指标key
      */
     public static String getMetricsKey(String surl, String metricType) {
