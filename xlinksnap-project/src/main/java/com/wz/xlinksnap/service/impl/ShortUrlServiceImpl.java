@@ -31,11 +31,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -223,11 +221,11 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         //3.批量插入数据库（异步执行）
         CompletableFuture.runAsync(() -> {
             batchInsertShortUrl(shortUrlList);
-        },executor);
+        }, executor);
         //4.批量添加到缓存和布隆过滤器中（异步执行）
         CompletableFuture.runAsync(() -> {
             batchAddLUrlTOCacheAndBloom(lurlList);
-        },executor);
+        }, executor);
         //5.构建响应对象返回
         return BatchCreateShortUrlResp.builder().mappingUrlList(result).groupId(groupId).build();
     }
@@ -304,6 +302,24 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     public List<ShortUrl> getShortUrlListByGroupIds(Set<Long> groupIds) {
         return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
                 .in(ShortUrl::getGroupId, groupIds));
+    }
+
+    /**
+     * 查询所有未过期的且未被删除的的短链
+     */
+    @Override
+    public List<ShortUrl> getAllUnexpiredShortUrl(LocalDateTime now) {
+        return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
+                .ge(ShortUrl::getValidTime, now)
+                .eq(ShortUrl::getIsDeleted, 0));
+    }
+
+    /**
+     * 批量更新ShortUrl
+     */
+    @Override
+    public void batchUpdateShortUrl(List<ShortUrl> shortUrlList) {
+        shortUrlMapper.batchUpdateShortUrl(shortUrlList);
     }
 
 

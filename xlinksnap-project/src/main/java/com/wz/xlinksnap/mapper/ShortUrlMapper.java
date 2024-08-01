@@ -16,4 +16,6 @@ import java.util.List;
 public interface ShortUrlMapper extends BaseMapper<ShortUrl> {
 
     void batchInsertShortUrl(List<ShortUrl> shortUrlList);
+
+    void batchUpdateShortUrl(List<ShortUrl> shortUrlList);
 }

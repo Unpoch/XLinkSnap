@@ -6,10 +6,27 @@
     <insert id="batchInsertShortUrl" parameterType="java.util.List">
         INSERT INTO t_short_url (surl_id, surl, lurl, valid_time, PV, UV, VV, IP, create_time, update_time)
         VALUES
-        <foreach collection="list" item="item" index="index" separator=",">
+        <foreach collection="shortUrlList" item="item" index="index" separator=",">
             (#{item.surlId}, #{item.surl}, #{item.lurl}, #{item.groupId},#{item.validTime}, #{item.PV}, #{item.UV}, #{item.VV},
             #{item.IP}, #{item.createTime}, #{item.updateTime})
         </foreach>
     </insert>
+
+    <update id="batchUpdateShortUrl" parameterType="java.util.List">
+        <foreach collection="shortUrlList" item="item" separator=";">
+            UPDATE t_short_url
+            <set>
+                <if test="item.surl != null">surl = #{item.surl},</if>
+                <if test="item.lurl != null">lurl = #{item.lurl},</if>
+                <if test="item.groupId != null">group_id = #{item.groupId},</if>
+                <if test="item.validTime != null">valid_time = #{item.validTime},</if>
+                <if test="item.PV != null">PV = #{item.PV},</if>
+                <if test="item.UV != null">UV = #{item.UV},</if>
+                <if test="item.VV != null">VV = #{item.VV},</if>
+                <if test="item.IP != null">IP = #{item.IP},</if>
+            </set>
+            WHERE surl_id = #{item.surlId}
+        </foreach>
+    </update>
 
 </mapper>

@@ -11,6 +11,7 @@ import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -41,4 +42,8 @@ public interface ShortUrlService extends IService<ShortUrl> {
     List<QueryGroupShortUrlCountResp> queryGroupShortUrlCount(QueryGroupShortUrlCountReq queryGroupShortUrlCountReq);
 
     List<ShortUrl> getShortUrlListByGroupIds(Set<Long> groupIds);
+
+    List<ShortUrl> getAllUnexpiredShortUrl(LocalDateTime now);
+
+    void batchUpdateShortUrl(List<ShortUrl> shortUrlList);
 }
