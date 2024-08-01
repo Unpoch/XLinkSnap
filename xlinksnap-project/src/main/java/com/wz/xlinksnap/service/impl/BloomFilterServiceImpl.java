@@ -24,7 +24,7 @@ public class BloomFilterServiceImpl implements BloomFilterService {
      * TODO：扩容？
      */
     @Override
-    public void addLUrl(String lurl) {
-        bloomFilter.add(lurl);
+    public void addLUrl(String lurlKey) {
+        bloomFilter.add(lurlKey);
     }
 }

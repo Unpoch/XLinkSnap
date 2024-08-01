@@ -27,17 +27,17 @@ public class MetricsServiceImpl implements MetricsService {
      * TODO：计算方式存在一些问题
      */
     @Override
-    public void setDailyMetrics(String surl, HttpServletRequest request, HttpServletResponse response) {
+    public void setDailyMetrics(String suffix, HttpServletRequest request, HttpServletResponse response) {
         String clientIp = request.getRemoteAddr();
         String userAgent = request.getHeader("User-Agent");
         //todo:这里存在问题，为空，我们写死（实际上cookie和sessionId一起判断）
         String sessionId = "1";
         // String sessionId = WebUtils.getSessionId(request);
         //key
-        String dailyPVKey = RedisConstant.getMetricsKey(surl, "pv");
-        String dailyUVKey = RedisConstant.getMetricsKey(surl, "uv");
-        String dailyVVKey = RedisConstant.getMetricsKey(surl, "vv");
-        String dailyIPKey = RedisConstant.getMetricsKey(surl, "ip");
+        String dailyPVKey = RedisConstant.getMetricsKey(suffix, "pv");
+        String dailyUVKey = RedisConstant.getMetricsKey(suffix, "uv");
+        String dailyVVKey = RedisConstant.getMetricsKey(suffix, "vv");
+        String dailyIPKey = RedisConstant.getMetricsKey(suffix, "ip");
         //统计指标
         redisTemplate.opsForValue().increment(dailyPVKey);//PV
         redisTemplate.opsForSet().add(dailyUVKey, sessionId);//UV
@@ -49,12 +49,12 @@ public class MetricsServiceImpl implements MetricsService {
      * 获取每日指标
      */
     @Override
-    public DailyMetrics getDailyMetrics(String surl) {
+    public DailyMetrics getDailyMetrics(String suffix) {
         //key
-        String dailyPVKey = RedisConstant.getMetricsKey(surl, "pv");
-        String dailyUVKey = RedisConstant.getMetricsKey(surl, "uv");
-        String dailyVVKey = RedisConstant.getMetricsKey(surl, "vv");
-        String dailyIPKey = RedisConstant.getMetricsKey(surl, "ip");
+        String dailyPVKey = RedisConstant.getMetricsKey(suffix, "pv");
+        String dailyUVKey = RedisConstant.getMetricsKey(suffix, "uv");
+        String dailyVVKey = RedisConstant.getMetricsKey(suffix, "vv");
+        String dailyIPKey = RedisConstant.getMetricsKey(suffix, "ip");
         //指标
         Integer dailyPV = (Integer) redisTemplate.opsForValue().get(dailyPVKey);//PV
         Long dailyUV = redisTemplate.opsForSet().size(dailyUVKey);//UV

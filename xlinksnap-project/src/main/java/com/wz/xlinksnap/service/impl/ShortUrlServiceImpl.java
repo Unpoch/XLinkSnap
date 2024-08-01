@@ -7,6 +7,7 @@ import com.wz.xlinksnap.common.annotation.DistributedRLock;
 import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.common.util.Base62Converter;
+import com.wz.xlinksnap.common.util.Base64Converter;
 import com.wz.xlinksnap.common.util.TimeUtil;
 import com.wz.xlinksnap.common.util.UrlUtil;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
@@ -90,17 +91,17 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         String domain = createShortUrlReq.getDomain();
         Long groupId = createShortUrlReq.getGroupId();
         LocalDateTime validTime = createShortUrlReq.getValidTime();
+        String lurlKey = Base64Converter.encodeToBase64(lurl);//作为布隆过滤器和redis的key
         //分布式锁
         // RLock lock = redissonClient.getLock(RedisConstant.CREATE_SURL_LOCK + lurl);
         // lock.lock();
         try {
             //0.二义性检查，是否已经为该长链生成短链
             //布隆过滤器判断，如果已经存在，则直接查询缓存（数据库）中的返回
-            if (bloomFilterService.containLUrl(lurl)) {
+            if (bloomFilterService.containLUrl(lurlKey)) {
                 //长短链接的一一映射关系
-                String surl = redisTemplate.opsForValue().get(RedisConstant.LONG_URL_KEY + lurl);
-                if (surl != null) //真的会出现这种情况？布隆过滤器和缓存是同步写入的
-                {
+                String surl = redisTemplate.opsForValue().get(RedisConstant.LONG_URL_KEY + lurlKey);
+                if (surl != null) {//真的会出现这种情况？布隆过滤器和缓存是同步写入的
                     return CreateShortUrlResp.builder().surl(surl).lurl(lurl).build();
                 }
                 //TODO：进一步查询数据库确认长链接是否存在
@@ -114,6 +115,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
             //4.构建ShortUrl对象插入数据库（可以异步处理）
             ShortUrl shortUrl = new ShortUrl()
                     .setSurlId(surlId)
+                    .setSuffix(suffix)
                     .setLurl(lurl)
                     .setSurl(surl)
                     .setGroupId(groupId)
@@ -124,10 +126,10 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .setIP(0);
             baseMapper.insert(shortUrl);
             //5.添加到布隆过滤器 和 缓存中 TODO：异步执行
-            bloomFilterService.addLUrl(lurl);
+            bloomFilterService.addLUrl(lurlKey);
             //计算当前时间和有效期的差值（精确到分钟）
             long minutes = TimeUtil.calculateDifference(LocalDateTime.now(), validTime, TimeUnit.MINUTES);
-            redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurl, surl, minutes, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurlKey, surl, minutes, TimeUnit.MINUTES);
             //6.生成CreateShortUrlResp返回
             return CreateShortUrlResp
                     .builder()
@@ -150,12 +152,12 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     @Override
     public void redirect(String surl, ServletRequest request, ServletResponse response) {
         try {
-            //1.统计指标 PV,UV,VV,IP
-            metricsService.setDailyMetrics(surl, (HttpServletRequest) request, (HttpServletResponse) response);
-            //2.查询短链对应的长链
             //获取短链的suffix -> base62 变成唯一id -> 根据唯一id查询长链（缓存？MySQL）
             String suffix = UrlUtil.getShortUrlSuffix(surl);
-            long surlId = Base62Converter.decode(suffix);
+            //1.统计指标 PV,UV,VV,IP
+            metricsService.setDailyMetrics(suffix, (HttpServletRequest) request, (HttpServletResponse) response);
+            //2.查询短链对应的长链
+            long surlId = Base62Converter.decode(suffix);//Base62解码获取唯一id
             ShortUrl shortUrl = getShortUrlBySurlId(surlId);
             String lurl = shortUrl.getLurl();
             //3.重定向
@@ -182,11 +184,12 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         //1.遍历集合，二义性检查
         //2.每个元素，生成唯一id，转换62进制，并生成短链
         lurlList.forEach(lurl -> {
+            String lurlKey = Base64Converter.encodeToBase64(lurl);
             String surl = "";
             //如果lurl已经转换过
-            if (bloomFilterService.containLUrl(lurl)) {
+            if (bloomFilterService.containLUrl(lurlKey)) {
                 //TODO:是否有必要如此做，误判？抛异常？
-                surl = redisTemplate.opsForValue().get(RedisConstant.LONG_URL_KEY + lurl);
+                surl = redisTemplate.opsForValue().get(RedisConstant.LONG_URL_KEY + lurlKey);
                 if (surl == null) { //缓存中也没有
                     return;//相当于continue
                 }
@@ -208,6 +211,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .setLurl(lurl)
                     .setSurl(surl)
                     .setSurlId(surlId)
+                    .setSuffix(suffix)
                     .setGroupId(groupId)
                     .setValidTime(validTime)
                     .setPV(0)
@@ -224,21 +228,25 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         }, executor);
         //4.批量添加到缓存和布隆过滤器中（异步执行）
         CompletableFuture.runAsync(() -> {
-            batchAddLUrlTOCacheAndBloom(lurlList);
+            batchAddLUrlTOCacheAndBloom(shortUrlList);
         }, executor);
         //5.构建响应对象返回
         return BatchCreateShortUrlResp.builder().mappingUrlList(result).groupId(groupId).build();
     }
 
     /**
-     * 批量添加lurl到布隆过滤器和缓存中
+     * 批量添加lurlKey到布隆过滤器和缓存中
      */
-    private void batchAddLUrlTOCacheAndBloom(List<String> lurlList) {
-        lurlList.forEach(lurl -> {
+    private void batchAddLUrlTOCacheAndBloom(List<ShortUrl> ShortUrl) {
+        ShortUrl.forEach(shortUrl -> {
+            String lurlKey = Base64Converter.encodeToBase64(shortUrl.getLurl());
+            String surl = shortUrl.getSurl();
+            LocalDateTime validTime = shortUrl.getValidTime();
+            long minutes = TimeUtil.calculateDifference(LocalDateTime.now(), validTime, TimeUnit.MINUTES);
             // 添加到布隆过滤器
-            bloomFilterService.addLUrl(lurl);
+            bloomFilterService.addLUrl(lurlKey);
             // 添加到缓存
-            redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurl, lurl);
+            redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurlKey, surl, minutes, TimeUnit.MINUTES);
         });
     }
 
@@ -262,7 +270,8 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         Page<ShortUrl> pageParams = new Page<>(pageNo, pageSize);
         //2.分页查询
         IPage<ShortUrl> page = baseMapper.selectPage(pageParams, new LambdaQueryWrapper<ShortUrl>()
-                .eq(groupId != null, ShortUrl::getGroupId, groupId));
+                .eq(groupId != null, ShortUrl::getGroupId, groupId)
+                .eq(ShortUrl::getIsDeleted,0));
         return PageShortUrlResp
                 .<ShortUrl>builder()
                 .total(page.getTotal())
@@ -301,7 +310,8 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     @Override
     public List<ShortUrl> getShortUrlListByGroupIds(Set<Long> groupIds) {
         return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
-                .in(ShortUrl::getGroupId, groupIds));
+                .in(ShortUrl::getGroupId, groupIds)
+                .eq(ShortUrl::getIsDeleted,0));
     }
 
     /**
@@ -329,6 +339,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     @Override
     public ShortUrl getShortUrlBySurlId(Long surlId) {
         return baseMapper.selectOne(new LambdaQueryWrapper<ShortUrl>()
-                .eq(ShortUrl::getSurlId, surlId));
+                .eq(ShortUrl::getSurlId, surlId)
+                .eq(ShortUrl::getIsDeleted,0));
     }
 }

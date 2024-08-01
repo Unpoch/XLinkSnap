@@ -7,7 +7,7 @@
         INSERT INTO t_short_url (surl_id, surl, lurl, valid_time, PV, UV, VV, IP, create_time, update_time)
         VALUES
         <foreach collection="shortUrlList" item="item" index="index" separator=",">
-            (#{item.surlId}, #{item.surl}, #{item.lurl}, #{item.groupId},#{item.validTime}, #{item.PV}, #{item.UV}, #{item.VV},
+            (#{item.surlId},#{suffix} ,#{item.surl}, #{item.lurl}, #{item.groupId},#{item.validTime}, #{item.PV}, #{item.UV}, #{item.VV},
             #{item.IP}, #{item.createTime}, #{item.updateTime})
         </foreach>
     </insert>
@@ -16,6 +16,7 @@
         <foreach collection="shortUrlList" item="item" separator=";">
             UPDATE t_short_url
             <set>
+                <if test="item.suffix != null">surl = #{item.suffix},</if>
                 <if test="item.surl != null">surl = #{item.surl},</if>
                 <if test="item.lurl != null">lurl = #{item.lurl},</if>
                 <if test="item.groupId != null">group_id = #{item.groupId},</if>

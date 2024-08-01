@@ -4,5 +4,5 @@ public interface BloomFilterService {
 
     public boolean containLUrl(String lurl);
 
-    void addLUrl(String lurl);
+    void addLUrl(String lurlKey);
 }

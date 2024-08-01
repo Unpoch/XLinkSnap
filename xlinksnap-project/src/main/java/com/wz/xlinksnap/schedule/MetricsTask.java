@@ -34,8 +34,8 @@ public class MetricsTask {
         List<ShortUrl> allUnexpiredShortUrl = shortUrlService.getAllUnexpiredShortUrl(LocalDateTime.now());
         //2.计算指标，同步
         allUnexpiredShortUrl.forEach(shortUrl -> {
-            String surl = shortUrl.getSurl();
-            DailyMetrics dailyMetrics = metricsService.getDailyMetrics(surl);
+            String suffix = shortUrl.getSuffix();
+            DailyMetrics dailyMetrics = metricsService.getDailyMetrics(suffix);
             shortUrl.setPV(shortUrl.getPV() + dailyMetrics.getDailyPV())
                     .setUV(shortUrl.getVV() + dailyMetrics.getDailyUV())
                     .setVV(shortUrl.getVV() + dailyMetrics.getDailyVV())

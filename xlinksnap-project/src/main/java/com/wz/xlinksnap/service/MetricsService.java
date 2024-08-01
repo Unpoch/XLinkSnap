@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public interface MetricsService {
 
-    void setDailyMetrics(String surl, HttpServletRequest request, HttpServletResponse response);
+    void setDailyMetrics(String suffix, HttpServletRequest request, HttpServletResponse response);
 
-    DailyMetrics getDailyMetrics(String surl);
+    DailyMetrics getDailyMetrics(String suffix);
 }

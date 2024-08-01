@@ -3,6 +3,7 @@ package com.wz.xlinksnap.common.aspect;
 import com.wz.xlinksnap.common.annotation.DistributedRLock;
 import com.wz.xlinksnap.common.annotation.DistributedReadWriteLock;
 import com.wz.xlinksnap.common.exception.ConditionException;
+import com.wz.xlinksnap.common.util.Base64Converter;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +50,8 @@ public class RedissonLockAspect {
     @Around("rReadWriteLockPointcut() && @annotation(distributedReadWriteLock)")
     public Object rReadWriteLockAround(ProceedingJoinPoint joinPoint,
                                        DistributedReadWriteLock distributedReadWriteLock) throws Throwable {
-        String lockKey = distributedReadWriteLock.prefix();
+        String suffix = getLockKeySuffix(joinPoint);
+        String lockKey = distributedReadWriteLock.prefix() + suffix;
         RReadWriteLock rwLock = redissonClient.getReadWriteLock(lockKey);
         long waitTime = distributedReadWriteLock.waitTime();
         long leaseTime = distributedReadWriteLock.leaseTime();
@@ -141,7 +143,7 @@ public class RedissonLockAspect {
         for (Object arg : args) {
             if (arg instanceof CreateShortUrlReq) {//如果是短链创建请求
                 CreateShortUrlReq createShortUrlReq = (CreateShortUrlReq) arg;
-                suffix = createShortUrlReq.getLurl();
+                suffix = Base64Converter.encodeToBase64(createShortUrlReq.getLurl());
                 break;
             }else if(arg instanceof BatchCreateShortUrlReq) {
                 BatchCreateShortUrlReq batchCreateShortUrlReq = (BatchCreateShortUrlReq) arg;

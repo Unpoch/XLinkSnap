@@ -37,7 +37,12 @@ public class ShortUrl extends BaseEntity implements Serializable {
     private Long surlId;
 
     /**
-     * 短链
+     * 短链后缀
+     */
+    private String suffix;
+
+    /**
+     * 完整短链
      */
     private String surl;
 
