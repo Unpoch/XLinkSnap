@@ -4,11 +4,11 @@
 
 
     <insert id="batchInsertShortUrl" parameterType="java.util.List">
-        INSERT INTO t_short_url (surl_id, surl, lurl, valid_time, PV, UV, VV, IP, create_time, update_time)
+        INSERT INTO t_short_url (surl_id, suffix,surl, lurl, group_id, valid_time, PV, UV, VV, IP)
         VALUES
         <foreach collection="shortUrlList" item="item" index="index" separator=",">
-            (#{item.surlId},#{suffix} ,#{item.surl}, #{item.lurl}, #{item.groupId},#{item.validTime}, #{item.PV}, #{item.UV}, #{item.VV},
-            #{item.IP}, #{item.createTime}, #{item.updateTime})
+            (#{item.surlId},#{item.suffix} ,#{item.surl}, #{item.lurl}, #{item.groupId},#{item.validTime}, #{item.PV}, #{item.UV}, #{item.VV},
+            #{item.IP})
         </foreach>
     </insert>
 

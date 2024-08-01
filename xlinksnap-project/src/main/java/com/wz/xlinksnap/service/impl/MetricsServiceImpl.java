@@ -3,6 +3,7 @@ package com.wz.xlinksnap.service.impl;
 import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.model.metrics.DailyMetrics;
 import com.wz.xlinksnap.service.MetricsService;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -66,5 +67,15 @@ public class MetricsServiceImpl implements MetricsService {
                 .dailyVV(dailyVV)
                 .dailyIP(dailyIP.intValue())
                 .build();
+    }
+
+    /**
+     * 删除每日指标的key 对应的value
+     */
+    @Override
+    public void deleteDailyMetricsKey() {
+        Set<String> keys = redisTemplate.keys(RedisConstant.DAILY_METRICS);
+        assert keys != null;
+        redisTemplate.delete(keys);
     }
 }

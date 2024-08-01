@@ -13,4 +13,6 @@ public interface MetricsService {
     void setDailyMetrics(String suffix, HttpServletRequest request, HttpServletResponse response);
 
     DailyMetrics getDailyMetrics(String suffix);
+
+    void deleteDailyMetricsKey();
 }

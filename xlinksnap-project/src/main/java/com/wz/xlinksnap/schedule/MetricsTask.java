@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
  * 指标定时任务类
  */
 @Component
+@Slf4j
 public class MetricsTask {
 
     @Autowired
@@ -30,6 +32,7 @@ public class MetricsTask {
      */
     @Scheduled(cron = "0 0 0 * * ？*")
     public void syncDailyMetrics() {
+        log.info("定时任务启动，" + LocalDateTime.now());
         //1.查询出所有未过期的短链，未删除的（过期短链定时清除）
         List<ShortUrl> allUnexpiredShortUrl = shortUrlService.getAllUnexpiredShortUrl(LocalDateTime.now());
         //2.计算指标，同步
@@ -41,7 +44,10 @@ public class MetricsTask {
                     .setVV(shortUrl.getVV() + dailyMetrics.getDailyVV())
                     .setIP(shortUrl.getIP() + dailyMetrics.getDailyIP());
         });
-        //3.批量更新数据库
+        //3.批量删除key
+        metricsService.deleteDailyMetricsKey();
+        //4.批量更新数据库
         shortUrlService.batchUpdateShortUrl(allUnexpiredShortUrl);
     }
+
 }
