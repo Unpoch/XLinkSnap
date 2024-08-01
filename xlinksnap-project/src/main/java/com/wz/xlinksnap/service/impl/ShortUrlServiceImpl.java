@@ -28,6 +28,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -214,10 +218,16 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .setIP(0);
             shortUrlList.add(shortUrl);
         });
+        //暂时用Executors创建线程池（不推荐），后续配置线程池类
+        ExecutorService executor = Executors.newFixedThreadPool(5);
         //3.批量插入数据库（异步执行）
-        batchInsertShortUrl(shortUrlList);
-        //4.批量添加到缓存和布隆过滤器中
-        batchAddLUrlTOCacheAndBloom(lurlList);
+        CompletableFuture.runAsync(() -> {
+            batchInsertShortUrl(shortUrlList);
+        },executor);
+        //4.批量添加到缓存和布隆过滤器中（异步执行）
+        CompletableFuture.runAsync(() -> {
+            batchAddLUrlTOCacheAndBloom(lurlList);
+        },executor);
         //5.构建响应对象返回
         return BatchCreateShortUrlResp.builder().mappingUrlList(result).groupId(groupId).build();
     }
