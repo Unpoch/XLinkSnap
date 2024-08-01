@@ -49,4 +49,6 @@ public interface ShortUrlService extends IService<ShortUrl> {
     void batchUpdateShortUrl(List<ShortUrl> shortUrlList);
 
     void exportExcel(Long userId, HttpServletResponse response);
+
+    List<ShortUrl> getAllExpiredShortUrl(LocalDateTime now);
 }

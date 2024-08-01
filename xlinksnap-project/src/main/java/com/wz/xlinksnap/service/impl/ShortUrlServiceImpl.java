@@ -373,6 +373,16 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
 
     }
 
+    /**
+     * 查询所有未被删除，且已过期的短链
+     */
+    @Override
+    public List<ShortUrl> getAllExpiredShortUrl(LocalDateTime now) {
+        return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
+                .ge(ShortUrl::getValidTime, now)
+                .eq(ShortUrl::getIsDeleted, 0));
+    }
+
 
     /**
      * 根据短链id获取短链对象
