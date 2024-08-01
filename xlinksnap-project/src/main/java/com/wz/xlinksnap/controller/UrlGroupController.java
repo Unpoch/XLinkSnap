@@ -1,6 +1,7 @@
 package com.wz.xlinksnap.controller;
 
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.api.R;
 import com.wz.xlinksnap.common.result.Result;
 import com.wz.xlinksnap.model.dto.req.AddUrlGroupReq;
@@ -39,7 +40,7 @@ public class UrlGroupController {
      */
     @PostMapping("/addUrlGroup")
     public Result<AddUrlGroupResp> addUrlGroup(@RequestBody AddUrlGroupReq addUrlGroupReq) {
-        //SaToken 获取用户id, set 到 addUrlGroup 中
+        addUrlGroupReq.setUserId((Long)StpUtil.getLoginId());
         AddUrlGroupResp addUrlGroupResp = urlGroupService.addUrlGroup(addUrlGroupReq);
         return Result.success(addUrlGroupResp);
     }
@@ -50,6 +51,7 @@ public class UrlGroupController {
      */
     @PostMapping("/updateUrlGroup")
     public Result<String> updateUrlGroup(@RequestBody UpdateUrlGroupReq updateUrlGroupReq) {
+        updateUrlGroupReq.setUserId((Long)StpUtil.getLoginId());
         urlGroupService.updateUrlGroup(updateUrlGroupReq);
         return Result.success();
     }

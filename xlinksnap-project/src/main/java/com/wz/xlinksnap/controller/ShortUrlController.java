@@ -28,24 +28,23 @@ import javax.servlet.ServletResponse;
  * @since 2024-07-27
  */
 @RestController
-@RequestMapping("/api/surl")
 public class ShortUrlController {
 
     @Autowired
     private ShortUrlService shortUrlService;
 
     /**
-     * TODO：短链接跳转原始链接
+     *  短链接跳转原始链接
      */
-    @GetMapping("/redirect")
-    public void redirect(@RequestParam String surl, ServletRequest request, ServletResponse response) {
+    @GetMapping("/{surl}")
+    public void redirect(@PathVariable("surl") String surl, ServletRequest request, ServletResponse response) {
         shortUrlService.redirect(surl, request, response);
     }
 
     /**
      * TODO：创建短链
      */
-    @PostMapping("/createShortUrl")
+    @PostMapping("/api/surl/createShortUrl")
     public Result<CreateShortUrlResp> createShortUrl(@RequestBody CreateShortUrlReq createShortUrlReq) {
         CreateShortUrlResp createShortUrlResp = shortUrlService.createShortUrl(createShortUrlReq);
         return Result.success(createShortUrlResp);
@@ -55,7 +54,7 @@ public class ShortUrlController {
     /**
      * TODO：批量创建短链接
      */
-    @PostMapping("/batchCreateShortUrl")
+    @PostMapping("/api/surl/batchCreateShortUrl")
     public Result<BatchCreateShortUrlResp> batchCreateShortUrl(@RequestBody
                                                                BatchCreateShortUrlReq batchCreateShortUrlReq) {
         BatchCreateShortUrlResp batchCreateShortUrlResp =
@@ -66,7 +65,7 @@ public class ShortUrlController {
     /**
      * TODO：分页查询短链
      */
-    @GetMapping("/pageShortUrl")
+    @GetMapping("/api/surl/pageShortUrl")
     public Result<PageShortUrlResp<ShortUrl>> pageShortUrl(PageShortUrlReq pageShortUrlReq) {
         // pageShortUrlReq.setUserId(SaToken获取UserId)？是否需要userId？
         PageShortUrlResp<ShortUrl> pageShortUrlResp = shortUrlService.pageShortUrl(pageShortUrlReq);
@@ -76,7 +75,7 @@ public class ShortUrlController {
     /**
      * 查询分组下所有短链数量
      */
-    @GetMapping("/queryGroupShortUrlCount")
+    @GetMapping("/api/surl/queryGroupShortUrlCount")
     public Result<List<QueryGroupShortUrlCountResp>> queryGroupShortUrlCount(@RequestParam
                                                                              QueryGroupShortUrlCountReq queryGroupShortUrlCountReq) {
         // queryGroupShortUrlCountReq.setUserId(token.getUserId);
