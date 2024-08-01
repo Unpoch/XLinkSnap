@@ -13,7 +13,9 @@ import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.service.ShortUrlService;
+
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +38,7 @@ public class ShortUrlController {
     private ShortUrlService shortUrlService;
 
     /**
-     *  短链接跳转原始链接
+     * 短链接跳转原始链接
      */
     @GetMapping("/{surl}")
     public void redirect(@PathVariable("surl") String surl, ServletRequest request, ServletResponse response) {
@@ -91,8 +93,22 @@ public class ShortUrlController {
     @GetMapping("/api/surl/exportExcel")
     public void exportExcel(HttpServletResponse response) {
         Long userId = StpUtil.getLoginIdAsLong();
-        shortUrlService.exportExcel(userId,response);
+        shortUrlService.exportExcel(userId, response);
     }
+
+    /**
+     * 分页查询所有已过期短链 和 已删除短链
+     */
+    @GetMapping("/api/surl/pageExpiredDeletedSurl")
+    public Result<PageShortUrlResp<ShortUrl>> pageExpiredDeletedSurl(@RequestParam PageShortUrlReq pageShortUrlReq) {
+        PageShortUrlResp<ShortUrl> pageShortUrlResp = shortUrlService.pageExpiredDeletedSurl(pageShortUrlReq);
+        return Result.success(pageShortUrlResp);
+    }
+
+    /**
+     * TODO：短链续期（过期可续，过期才会被删除）
+     */
+    // @PostMapping("/api/surl/renewalShortUrl")
 
 }
 

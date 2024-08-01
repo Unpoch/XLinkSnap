@@ -272,12 +272,15 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         //1.构建分页参数
         Integer pageNo = pageShortUrlReq.getPageNo();
         Integer pageSize = pageShortUrlReq.getPageSize();
+        int start = (pageNo - 1) * pageSize;
         Long groupId = pageShortUrlReq.getGroupId();
-        Page<ShortUrl> pageParams = new Page<>(pageNo, pageSize);
+        Page<ShortUrl> pageParams = new Page<>(start, pageSize);
         //2.分页查询
         IPage<ShortUrl> page = baseMapper.selectPage(pageParams, new LambdaQueryWrapper<ShortUrl>()
                 .eq(groupId != null, ShortUrl::getGroupId, groupId)
-                .eq(ShortUrl::getIsDeleted, 0));
+                .ge(ShortUrl::getValidTime, LocalDateTime.now()) //未过期的
+                .eq(ShortUrl::getIsDeleted, 0)  //未被删除的
+                .orderByDesc(ShortUrl::getSurlId));
         return PageShortUrlResp
                 .<ShortUrl>builder()
                 .total(page.getTotal())
@@ -381,6 +384,31 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
                 .ge(ShortUrl::getValidTime, now)
                 .eq(ShortUrl::getIsDeleted, 0));
+    }
+
+    /**
+     * 分页查询所有已过期短链 和 已删除短链
+     */
+    @Override
+    public PageShortUrlResp<ShortUrl> pageExpiredDeletedSurl(PageShortUrlReq pageShortUrlReq) {
+        Integer pageNo = pageShortUrlReq.getPageNo();
+        Integer pageSize = pageShortUrlReq.getPageSize();
+        Long groupId = pageShortUrlReq.getGroupId();
+        int start = (pageNo - 1) * pageSize;//从第几条开始查
+        //1.构建分页参数
+        Page<ShortUrl> pageParams = new Page<>(start, pageSize);
+        //2.分页查询
+        IPage<ShortUrl> page = baseMapper.selectPage(pageParams, new LambdaQueryWrapper<ShortUrl>()
+                .eq(groupId != null, ShortUrl::getGroupId, groupId)
+                .le(ShortUrl::getValidTime, LocalDateTime.now()) //过期的
+                .eq(ShortUrl::getIsDeleted, 1) //已删除的
+                .orderByDesc(ShortUrl::getSurlId));
+        //3.构建响应对象返回
+        return PageShortUrlResp
+                .<ShortUrl>builder()
+                .total(page.getTotal())
+                .records(page.getRecords())
+                .build();
     }
 
 

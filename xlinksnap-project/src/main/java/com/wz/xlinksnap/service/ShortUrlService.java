@@ -51,4 +51,6 @@ public interface ShortUrlService extends IService<ShortUrl> {
     void exportExcel(Long userId, HttpServletResponse response);
 
     List<ShortUrl> getAllExpiredShortUrl(LocalDateTime now);
+
+    PageShortUrlResp<ShortUrl> pageExpiredDeletedSurl(PageShortUrlReq pageShortUrlReq);
 }
