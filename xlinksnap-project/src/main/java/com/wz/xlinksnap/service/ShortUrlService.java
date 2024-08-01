@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -46,4 +47,6 @@ public interface ShortUrlService extends IService<ShortUrl> {
     List<ShortUrl> getAllUnexpiredShortUrl(LocalDateTime now);
 
     void batchUpdateShortUrl(List<ShortUrl> shortUrlList);
+
+    void exportExcel(Long userId, HttpServletResponse response);
 }

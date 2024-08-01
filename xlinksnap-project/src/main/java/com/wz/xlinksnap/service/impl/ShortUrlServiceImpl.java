@@ -1,5 +1,6 @@
 package com.wz.xlinksnap.service.impl;
 
+import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -21,11 +22,12 @@ import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.mapper.ShortUrlMapper;
-import com.wz.xlinksnap.service.BloomFilterService;
-import com.wz.xlinksnap.service.IdGenerationService;
-import com.wz.xlinksnap.service.MetricsService;
-import com.wz.xlinksnap.service.ShortUrlService;
+import com.wz.xlinksnap.model.entity.UrlGroup;
+import com.wz.xlinksnap.model.excel.ShortUrlExport;
+import com.wz.xlinksnap.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
+import java.net.URLEncoder;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RedissonClient;
@@ -66,6 +69,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
 
     @Autowired
     private MetricsService metricsService;
+
+    @Autowired
+    private UrlGroupService urlGroupService;
 
     @Autowired
     private ShortUrlMapper shortUrlMapper;
@@ -271,7 +277,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         //2.分页查询
         IPage<ShortUrl> page = baseMapper.selectPage(pageParams, new LambdaQueryWrapper<ShortUrl>()
                 .eq(groupId != null, ShortUrl::getGroupId, groupId)
-                .eq(ShortUrl::getIsDeleted,0));
+                .eq(ShortUrl::getIsDeleted, 0));
         return PageShortUrlResp
                 .<ShortUrl>builder()
                 .total(page.getTotal())
@@ -311,7 +317,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     public List<ShortUrl> getShortUrlListByGroupIds(Set<Long> groupIds) {
         return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
                 .in(ShortUrl::getGroupId, groupIds)
-                .eq(ShortUrl::getIsDeleted,0));
+                .eq(ShortUrl::getIsDeleted, 0));
     }
 
     /**
@@ -332,6 +338,41 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         shortUrlMapper.batchUpdateShortUrl(shortUrlList);
     }
 
+    /**
+     * 导出短链接excel数据表
+     */
+    @Override
+    public void exportExcel(Long userId, HttpServletResponse response) {
+        //1.根据userId查询分组集合，筛选分组id
+        List<UrlGroup> urlGroupList = urlGroupService.getGroupIdsByUserId(userId);
+        Set<Long> groupIdSet = urlGroupList.stream().map(UrlGroup::getId).collect(Collectors.toSet());
+        //2.根据分组id集合查询所有短链接
+        List<ShortUrl> shortUrlList = getShortUrlListByGroupIds(groupIdSet);
+        //3.将短链接对象转换为ShortUrlExport
+        List<ShortUrlExport> shortUrlExportList = shortUrlList.stream().map(shortUrl -> new ShortUrlExport()
+                .setSurlId(shortUrl.getSurlId())
+                .setSurl(shortUrl.getSurl())
+                .setLurl(shortUrl.getLurl())
+                .setPV(shortUrl.getPV())
+                .setUV(shortUrl.getUV())
+                .setVV(shortUrl.getVV())
+                .setIP(shortUrl.getIP())
+                .setValidTime(shortUrl.getValidTime())).collect(Collectors.toList());
+        //4.设置响应头
+        try {
+            response.setContentType("application/vnd.ms-excel");
+            response.setCharacterEncoding("utf-8");
+            String fileName = URLEncoder.encode("短链数据", "UTF-8").replaceAll("\\+", "%20");
+            response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
+            //5.导出数据
+            EasyExcel.write(response.getOutputStream(), ShortUrlExport.class).sheet("短链数据").doWrite(shortUrlExportList);
+        } catch (Exception e) {
+            log.error("导出数据失败" + "用户：" + userId);
+            throw new ConditionException("导出数据失败！");
+        }
+
+    }
+
 
     /**
      * 根据短链id获取短链对象
@@ -340,6 +381,6 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     public ShortUrl getShortUrlBySurlId(Long surlId) {
         return baseMapper.selectOne(new LambdaQueryWrapper<ShortUrl>()
                 .eq(ShortUrl::getSurlId, surlId)
-                .eq(ShortUrl::getIsDeleted,0));
+                .eq(ShortUrl::getIsDeleted, 0));
     }
 }

@@ -1,6 +1,7 @@
 package com.wz.xlinksnap.controller;
 
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.wz.xlinksnap.common.result.Result;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * <p>
@@ -81,6 +83,15 @@ public class ShortUrlController {
         // queryGroupShortUrlCountReq.setUserId(token.getUserId);
         List<QueryGroupShortUrlCountResp> result = shortUrlService.queryGroupShortUrlCount(queryGroupShortUrlCountReq);
         return Result.success(result);
+    }
+
+    /**
+     * 导出短链接excel数据表
+     */
+    @GetMapping("/api/surl/exportExcel")
+    public void exportExcel(HttpServletResponse response) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        shortUrlService.exportExcel(userId,response);
     }
 
 }

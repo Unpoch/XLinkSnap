@@ -4,14 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.mapper.UrlGroupMapper;
 import com.wz.xlinksnap.model.dto.req.AddUrlGroupReq;
-import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
 import com.wz.xlinksnap.model.dto.req.UpdateUrlGroupReq;
 import com.wz.xlinksnap.model.dto.resp.AddUrlGroupResp;
-import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.model.entity.UrlGroup;
 import com.wz.xlinksnap.service.UrlGroupService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -89,5 +86,14 @@ public class UrlGroupServiceImpl extends ServiceImpl<UrlGroupMapper, UrlGroup> i
                 .setName(name)
                 .setId(updateUrlGroupReq.getGroupId());
         baseMapper.updateById(urlGroup);
+    }
+
+    /**
+     * 根据userId查询分组id集合
+     */
+    @Override
+    public List<UrlGroup> getGroupIdsByUserId(Long userId) {
+        return baseMapper.selectList(new LambdaQueryWrapper<UrlGroup>()
+                .eq(UrlGroup::getUserId,userId));
     }
 }

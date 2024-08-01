@@ -30,7 +30,7 @@ public class MetricsTask {
     /**
      * 同步每日指标到 总指标统计
      */
-    @Scheduled(cron = "0 0 0 * * ？*")
+    @Scheduled(cron = "0 0 0 * * ?")
     public void syncDailyMetrics() {
         log.info("定时任务启动，" + LocalDateTime.now());
         //1.查询出所有未过期的短链，未删除的（过期短链定时清除）

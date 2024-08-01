@@ -100,7 +100,7 @@ public class MetricsServiceImpl implements MetricsService {
         //指标
         Integer dailyPV = (Integer) redisTemplate.opsForValue().get(dailyPVKey);//PV
         // Long dailyUV = redisTemplate.opsForSet().size(dailyUVKey);//UV
-        Integer dailyUV = (Integer) redisTemplate.opsForValue().get(dailyUVKey)
+        Integer dailyUV = (Integer) redisTemplate.opsForValue().get(dailyUVKey);
         Integer dailyVV = (Integer) redisTemplate.opsForValue().get(dailyVVKey);//VV
         Long dailyIP = redisTemplate.opsForSet().size(dailyIPKey);//IP
         return DailyMetrics.builder()
