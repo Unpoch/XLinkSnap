@@ -40,7 +40,7 @@ public class UrlGroupController {
      */
     @PostMapping("/addUrlGroup")
     public Result<AddUrlGroupResp> addUrlGroup(@RequestBody AddUrlGroupReq addUrlGroupReq) {
-        addUrlGroupReq.setUserId((Long)StpUtil.getLoginId());
+        addUrlGroupReq.setUserId(StpUtil.getLoginIdAsLong());
         AddUrlGroupResp addUrlGroupResp = urlGroupService.addUrlGroup(addUrlGroupReq);
         return Result.success(addUrlGroupResp);
     }
@@ -51,7 +51,7 @@ public class UrlGroupController {
      */
     @PostMapping("/updateUrlGroup")
     public Result<String> updateUrlGroup(@RequestBody UpdateUrlGroupReq updateUrlGroupReq) {
-        updateUrlGroupReq.setUserId((Long)StpUtil.getLoginId());
+        updateUrlGroupReq.setUserId(StpUtil.getLoginIdAsLong());
         urlGroupService.updateUrlGroup(updateUrlGroupReq);
         return Result.success();
     }
