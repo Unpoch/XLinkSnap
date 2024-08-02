@@ -1,8 +1,8 @@
 package com.wz.xlinksnap.controller;
 
 import com.wz.xlinksnap.common.result.Result;
+import com.wz.xlinksnap.model.dto.req.BatchSendMessageReq;
 import com.wz.xlinksnap.model.dto.req.SendMessageReq;
-import com.wz.xlinksnap.service.MessageService;
 import com.wz.xlinksnap.service.ShortUrlService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,4 +32,9 @@ public class MessageController {
     /**
      * TODO: 批量发送
      */
+    @PostMapping("/batchSendMessage")
+    public Result<String> batchSendMessage(@RequestBody BatchSendMessageReq batchSendMessageReq) {
+        shortUrlService.batchSendMessage(batchSendMessageReq);
+        return Result.success();
+    }
 }

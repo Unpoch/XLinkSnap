@@ -13,6 +13,7 @@ import com.wz.xlinksnap.common.util.Base64Converter;
 import com.wz.xlinksnap.common.util.TimeUtil;
 import com.wz.xlinksnap.common.util.UrlUtil;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.BatchSendMessageReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
 import com.wz.xlinksnap.model.dto.req.RenewalShortUrlReq;
@@ -56,6 +57,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.springframework.util.CollectionUtils;
 
 /**
  * <p>
@@ -488,7 +490,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                 .groupId(sendMessageReq.getGroupId())
                 .validTime(sendMessageReq.getValidTime()).build();
         CreateShortUrlResp createShortUrlResp = createShortUrl(createShortUrlReq);
-        //3.发送消息
+        //3.获取短链
         String surl = createShortUrlResp.getSurl();
         //4.填充短链
         String msg = msgBody.replace("#", surl);
@@ -510,6 +512,56 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
             } else {//定时发送
                 dynamicTaskService.scheduleTask(() -> messageService.sendMessageByEmail(subject, msg, phone),
                         sendTime);
+            }
+        }
+    }
+
+    /**
+     * 批量发送消息
+     */
+    @Override
+    public void batchSendMessage(BatchSendMessageReq batchSendMessageReq) {
+        //1.获取参数
+        List<String> phoneList = batchSendMessageReq.getPhoneList();
+        List<String> emailList = batchSendMessageReq.getEmailList();
+        LocalDateTime sendTime = batchSendMessageReq.getSendTime();
+        String sendType = batchSendMessageReq.getSendType();
+        String subject = batchSendMessageReq.getSubject();
+        String msgBody = batchSendMessageReq.getMsgBody();
+        //2.为长链创建短链，需要创建短链请求对象
+        CreateShortUrlReq createShortUrlReq = CreateShortUrlReq
+                .builder()
+                .domain(batchSendMessageReq.getDomain())
+                .lurl(batchSendMessageReq.getLurl())
+                .groupId(batchSendMessageReq.getGroupId())
+                .validTime(batchSendMessageReq.getValidTime())
+                .build();
+        CreateShortUrlResp createShortUrlResp = createShortUrl(createShortUrlReq);
+        //3.获取短链
+        String surl = createShortUrlResp.getSurl();
+        //4.填充消息体
+        String text = msgBody.replace("#", surl);
+        //5.批量发送信息（异步）
+        if (!CollectionUtils.isEmpty(emailList)) {
+            if (MessageConstant.SEND_IN_TIME.equals(sendType)) {
+                CompletableFuture.runAsync(() -> {
+                    messageService.batchSendMessageByEmail(subject, text, emailList);
+                });
+            } else {
+                dynamicTaskService.scheduleTask(() -> {
+                    messageService.batchSendMessageByEmail(subject, text, emailList);
+                }, sendTime);
+            }
+        }
+        if (!CollectionUtils.isEmpty(phoneList)) {
+            if (MessageConstant.SEND_IN_TIME.equals(sendType)) {
+                CompletableFuture.runAsync(() -> {
+                    messageService.batchSendMessageByPhone(subject, text, phoneList);
+                });
+            } else {
+                dynamicTaskService.scheduleTask(() -> {
+                    messageService.batchSendMessageByEmail(subject, text, phoneList);
+                }, sendTime);
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.wz.xlinksnap.service;
 
+import java.util.List;
+
 /**
  * 发送消息服务接口
  */
@@ -13,4 +15,8 @@ public interface MessageService {
     void sendMessageByEmail(String subject,String msgBody, String email);
 
     void sendMessageByPhone(String subject,String msgBody, String phone);
+
+    void batchSendMessageByEmail(String subject, String text, List<String> emailList);
+
+    void batchSendMessageByPhone(String subject, String text, List<String> emailList);
 }

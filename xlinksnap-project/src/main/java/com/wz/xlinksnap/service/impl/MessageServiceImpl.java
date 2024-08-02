@@ -4,6 +4,7 @@ import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.service.MessageService;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +39,7 @@ public class MessageServiceImpl implements MessageService {
     public void sendCodeByEmail(String email) {
         String code = generateCode();
         //有效期：五分钟
-        redisTemplate.opsForValue().set(RedisConstant.USER_VERIFY_CODE + email,code,5, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(RedisConstant.USER_VERIFY_CODE + email, code, 5, TimeUnit.MINUTES);
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setFrom(senderEmail);
@@ -59,9 +60,9 @@ public class MessageServiceImpl implements MessageService {
      * 验证验证码是否正确
      */
     @Override
-    public boolean verifyCode(String s,String code) {
+    public boolean verifyCode(String s, String code) {
         String sendCode = redisTemplate.opsForValue().get(RedisConstant.USER_VERIFY_CODE + s);
-        if(StringUtils.isEmpty(sendCode)) {
+        if (StringUtils.isEmpty(sendCode)) {
             log.info("验证码已过期！发送的验证码：" + sendCode + "，输入的验证码：" + code + "，邮箱或者手机：" + s);
             throw new ConditionException("验证码已过期！请重新发送");
         }
@@ -72,7 +73,7 @@ public class MessageServiceImpl implements MessageService {
      * 发送邮箱消息
      */
     @Override
-    public void sendMessageByEmail(String subject,String msgBody, String email) {
+    public void sendMessageByEmail(String subject, String msgBody, String email) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setSubject(subject);//标题
         message.setText(msgBody);//消息体
@@ -86,7 +87,28 @@ public class MessageServiceImpl implements MessageService {
      * 发送手机消息
      */
     @Override
-    public void sendMessageByPhone(String subject,String msgBody, String phone) {
+    public void sendMessageByPhone(String subject, String msgBody, String phone) {
+
+    }
+
+    /**
+     * 批量发送邮箱消息
+     */
+    @Override
+    public void batchSendMessageByEmail(String subject, String text, List<String> emailList) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setSubject(subject);//标题
+        message.setText(text);//消息体
+        message.setFrom(senderEmail);
+        message.setTo(emailList.toArray(new String[0]));
+        mailSender.send(message);
+    }
+
+    /**
+     * TODO：批量发送短信消息
+     */
+    @Override
+    public void batchSendMessageByPhone(String subject, String text, List<String> emailList) {
 
     }
 
