@@ -4,6 +4,7 @@ import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
 import com.wz.xlinksnap.model.dto.req.RenewalShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.SendMessageReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
@@ -59,4 +60,6 @@ public interface ShortUrlService extends IService<ShortUrl> {
     RenewalShortUrlResp renewalShortUrl(RenewalShortUrlReq renewalShortUrlReq);
 
     List<ShortUrl> getShortUrlListBySurlIds(Set<Long> surlIds)
+
+    void sendMessage(SendMessageReq sendMessageReq);
 }

@@ -9,4 +9,8 @@ public interface MessageService {
     void sendCodeByPhone(String phone);
 
     boolean verifyCode(String s,String code);
+
+    void sendMessageByEmail(String subject,String msgBody, String email);
+
+    void sendMessageByPhone(String subject,String msgBody, String phone);
 }

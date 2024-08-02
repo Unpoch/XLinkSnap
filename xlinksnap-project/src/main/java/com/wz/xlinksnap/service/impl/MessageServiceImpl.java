@@ -3,6 +3,7 @@ package com.wz.xlinksnap.service.impl;
 import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.service.MessageService;
+import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +66,28 @@ public class MessageServiceImpl implements MessageService {
             throw new ConditionException("验证码已过期！请重新发送");
         }
         return code.equals(sendCode);
+    }
+
+    /**
+     * 发送邮箱消息
+     */
+    @Override
+    public void sendMessageByEmail(String subject,String msgBody, String email) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setSubject(subject);//标题
+        message.setText(msgBody);//消息体
+        message.setTo(email);
+        message.setFrom(senderEmail);
+        mailSender.send(message);
+    }
+
+    /**
+     * TODO：待接入阿里云短信
+     * 发送手机消息
+     */
+    @Override
+    public void sendMessageByPhone(String subject,String msgBody, String phone) {
+
     }
 
     /*

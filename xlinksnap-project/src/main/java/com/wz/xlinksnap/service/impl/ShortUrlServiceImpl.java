@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wz.xlinksnap.common.annotation.DistributedRLock;
+import com.wz.xlinksnap.common.constant.MessageConstant;
 import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.common.exception.ConditionException;
 import com.wz.xlinksnap.common.util.Base62Converter;
@@ -15,6 +16,7 @@ import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
 import com.wz.xlinksnap.model.dto.req.RenewalShortUrlReq;
+import com.wz.xlinksnap.model.dto.req.SendMessageReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlMappingResp;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
@@ -36,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +79,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     private UrlGroupService urlGroupService;
 
     @Autowired
+    private MessageService messageService;
+
+    @Autowired
     private ShortUrlMapper shortUrlMapper;
 
     @Autowired
@@ -83,6 +89,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private DynamicTaskService dynamicTaskService;
 
     @Autowired
     private RedissonClient redissonClient;
@@ -458,6 +467,51 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     public List<ShortUrl> getShortUrlListBySurlIds(Set<Long> surlIds) {
         return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
                 .in(ShortUrl::getSurlId, surlIds));
+    }
+
+    /**
+     * 发送信息
+     */
+    @Override
+    public void sendMessage(SendMessageReq sendMessageReq) {
+        //1.获取参数
+        String email = sendMessageReq.getEmail();
+        String phone = sendMessageReq.getPhone();
+        String subject = sendMessageReq.getSubject();
+        String msgBody = sendMessageReq.getMsgBody();
+        String sendType = sendMessageReq.getSendType();
+        LocalDateTime sendTime = sendMessageReq.getSendTime();
+        //2.为长链创建短链，需要创建短链请求对象
+        CreateShortUrlReq createShortUrlReq = CreateShortUrlReq.builder()
+                .lurl(sendMessageReq.getLurl())
+                .domain(sendMessageReq.getDomain())
+                .groupId(sendMessageReq.getGroupId())
+                .validTime(sendMessageReq.getValidTime()).build();
+        CreateShortUrlResp createShortUrlResp = createShortUrl(createShortUrlReq);
+        //3.发送消息
+        String surl = createShortUrlResp.getSurl();
+        //4.填充短链
+        String msg = msgBody.replace("#", surl);
+        //5.发送短信
+        if (!StringUtils.isEmpty(email)) {
+            if (MessageConstant.SEND_IN_TIME.equals(sendType)) {//立即发送
+                //TODO:异步发送
+                messageService.sendMessageByEmail(subject, msg, email);
+            } else {//定时发送
+                dynamicTaskService.scheduleTask(() -> messageService.sendMessageByEmail(subject, msg, email),
+                        sendTime);
+            }
+
+        }
+        if (!StringUtils.isEmpty(phone)) {
+            if (MessageConstant.SEND_IN_TIME.equals(sendType)) {
+                //TODO:异步发送
+                messageService.sendMessageByPhone(subject, msg, phone);
+            } else {//定时发送
+                dynamicTaskService.scheduleTask(() -> messageService.sendMessageByEmail(subject, msg, phone),
+                        sendTime);
+            }
+        }
     }
 
 
