@@ -3,11 +3,13 @@ package com.wz.xlinksnap.service;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
+import com.wz.xlinksnap.model.dto.req.RenewalShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
+import com.wz.xlinksnap.model.dto.resp.RenewalShortUrlResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -53,4 +55,8 @@ public interface ShortUrlService extends IService<ShortUrl> {
     List<ShortUrl> getAllExpiredShortUrl(LocalDateTime now);
 
     PageShortUrlResp<ShortUrl> pageExpiredDeletedSurl(PageShortUrlReq pageShortUrlReq);
+
+    RenewalShortUrlResp renewalShortUrl(RenewalShortUrlReq renewalShortUrlReq);
+
+    List<ShortUrl> getShortUrlListBySurlIds(Set<Long> surlIds)
 }

@@ -14,12 +14,14 @@ import com.wz.xlinksnap.common.util.UrlUtil;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
+import com.wz.xlinksnap.model.dto.req.RenewalShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlMappingResp;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
+import com.wz.xlinksnap.model.dto.resp.RenewalShortUrlResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.mapper.ShortUrlMapper;
 import com.wz.xlinksnap.model.entity.UrlGroup;
@@ -368,7 +370,8 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
             String fileName = URLEncoder.encode("短链数据", "UTF-8").replaceAll("\\+", "%20");
             response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
             //5.导出数据
-            EasyExcel.write(response.getOutputStream(), ShortUrlExport.class).sheet("短链数据").doWrite(shortUrlExportList);
+            EasyExcel.write(response.getOutputStream(), ShortUrlExport.class).sheet("短链数据")
+                    .doWrite(shortUrlExportList);
         } catch (Exception e) {
             log.error("导出数据失败" + "用户：" + userId);
             throw new ConditionException("导出数据失败！");
@@ -409,6 +412,52 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                 .total(page.getTotal())
                 .records(page.getRecords())
                 .build();
+    }
+
+    /**
+     * 短链续期
+     * 未过期延长有效期
+     * 过期，过期才会被删除
+     * 被删除的续期，直接恢复未删除，且延长有效期
+     */
+    @Override
+    public RenewalShortUrlResp renewalShortUrl(RenewalShortUrlReq renewalShortUrlReq) {
+        //1.获取参数
+        List<String> surlList = renewalShortUrlReq.getSurlList();
+        LocalDateTime nextValidTime = renewalShortUrlReq.getNextValidTime();
+        int successCount = 0;
+        //2.surlList -> 后缀suffix -> 短链唯一id集合
+        Set<Long> surlIdSet = surlList.stream().map(surl -> Base62Converter.decode(UrlUtil.getShortUrlSuffix(surl)))
+                .collect(Collectors.toSet());
+        //3.根据短链唯一id查询所有短链对象（不管是否过期，是否删除）
+        List<ShortUrl> shortUrlList = getShortUrlListBySurlIds(surlIdSet);
+        //4.为这些短链续期，如果删除的要恢复，其实全部设置为0，就没有那么多判断了
+        //shortUrlList.forEach(shortUrl -> {}); lambda表达式中操作变量必须为final或者原子类型
+        for (ShortUrl shortUrl : shortUrlList) {
+            //有效期必须在设置的有效期之前
+            if (shortUrl.getValidTime().isBefore(nextValidTime)) {
+                shortUrl.setIsDeleted(0);
+                shortUrl.setValidTime(nextValidTime);
+                successCount++;
+            }
+        }
+        //5.批量更新数据库
+        batchUpdateShortUrl(shortUrlList);
+        //6.构建响应对象
+        return RenewalShortUrlResp
+                .builder()
+                .successCount(successCount)
+                .nextValidTime(nextValidTime)
+                .build();
+    }
+
+    /**
+     * 根据短链id集合查询所有短链
+     */
+    @Override
+    public List<ShortUrl> getShortUrlListBySurlIds(Set<Long> surlIds) {
+        return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
+                .in(ShortUrl::getSurlId, surlIds));
     }
 
 

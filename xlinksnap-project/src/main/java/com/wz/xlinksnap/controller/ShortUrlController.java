@@ -2,15 +2,18 @@ package com.wz.xlinksnap.controller;
 
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.extension.api.R;
 import com.wz.xlinksnap.common.result.Result;
 import com.wz.xlinksnap.model.dto.req.BatchCreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.PageShortUrlReq;
 import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
+import com.wz.xlinksnap.model.dto.req.RenewalShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.BatchCreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.CreateShortUrlResp;
 import com.wz.xlinksnap.model.dto.req.CreateShortUrlReq;
 import com.wz.xlinksnap.model.dto.resp.PageShortUrlResp;
 import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
+import com.wz.xlinksnap.model.dto.resp.RenewalShortUrlResp;
 import com.wz.xlinksnap.model.entity.ShortUrl;
 import com.wz.xlinksnap.service.ShortUrlService;
 
@@ -106,9 +109,12 @@ public class ShortUrlController {
     }
 
     /**
-     * TODO：短链续期（过期可续，过期才会被删除）
+     * 短链续期（未过期/过期可续，过期才会被删除，删除可恢复）
      */
-    // @PostMapping("/api/surl/renewalShortUrl")
-
+    @PostMapping("/api/surl/renewalShortUrl")
+    public Result<RenewalShortUrlResp> renewalShortUrl(@RequestBody RenewalShortUrlReq renewalShortUrlReq) {
+        RenewalShortUrlResp renewalShortUrlResp = shortUrlService.renewalShortUrl(renewalShortUrlReq);
+        return Result.success(renewalShortUrlResp);
+    }
 }
 
