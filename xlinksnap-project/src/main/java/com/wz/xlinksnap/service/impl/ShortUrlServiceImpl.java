@@ -184,21 +184,27 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
      */
     @Override
     public void redirect(String surl, ServletRequest request, ServletResponse response) {
-        //TODO：检查短链是否过期，过期抛异常：您访问的链接不存在！
         try {
-            //获取短链的suffix -> base62 变成唯一id -> 根据唯一id查询长链（缓存？MySQL）
+            //1.获取短链的suffix -> base62 变成唯一id
             String suffix = UrlUtil.getShortUrlSuffix(surl);
-            //1.统计指标 PV,UV,VV,IP
-            metricsService.setDailyMetrics(suffix, (HttpServletRequest) request, (HttpServletResponse) response);
-            //2.查询短链对应的长链
             long surlId = Base62Converter.decode(suffix);//Base62解码获取唯一id
+            //2.根据唯一id查询ShortUrl
             ShortUrl shortUrl = getShortUrlBySurlId(surlId);
+            //检查短链是否过期，过期抛异常，访问的链接不存在
+            //空说明被删除了
+            if (shortUrl == null || shortUrl.getValidTime().isBefore(LocalDateTime.now())) {
+                log.info("短链接：{} 过期或已被删除", surl);
+                throw new ConditionException("404", "您访问的链接已失效！");
+            }
+            //2.统计指标 PV,UV,VV,IP
+            metricsService.setDailyMetrics(suffix, (HttpServletRequest) request, (HttpServletResponse) response);
+            //3.获取长链
             String lurl = shortUrl.getLurl();
-            //3.重定向
+            //4.重定向
             ((HttpServletResponse) response).sendRedirect(lurl);
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new ConditionException("403", "页面找不到！！");
+            throw new ConditionException("404", "页面找不到！！");
         }
     }
 
