@@ -20,6 +20,7 @@ public class ShortUrlTask {
 
     /**
      * 定时逻辑删除过期的短链
+     * TODO: 布隆过滤器和缓存也要删除
      */
     @Scheduled(cron = "0 0 4 * * ?")
     public void logicDeletedExpiredShortUrl() {

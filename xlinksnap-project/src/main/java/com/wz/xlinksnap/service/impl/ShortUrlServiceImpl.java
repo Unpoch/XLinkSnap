@@ -58,6 +58,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -106,7 +107,6 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
      * 创建短链
      * 二义性检查
      */
-    //TODO: 分布式锁注解实现
     @Override
     @DistributedRLock(prefix = RedisConstant.CREATE_SURL_LOCK)
     public CreateShortUrlResp createShortUrl(CreateShortUrlReq createShortUrlReq) {
@@ -115,19 +115,27 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         Long groupId = createShortUrlReq.getGroupId();
         LocalDateTime validTime = createShortUrlReq.getValidTime();
         String lurlKey = Base64Converter.encodeToBase64(lurl);//作为布隆过滤器和redis的key
-        //分布式锁
-        // RLock lock = redissonClient.getLock(RedisConstant.CREATE_SURL_LOCK + lurl);
-        // lock.lock();
         try {
             //0.二义性检查，是否已经为该长链生成短链
             //布隆过滤器判断，如果已经存在，则直接查询缓存（数据库）中的返回
             if (bloomFilterService.containLUrl(lurlKey)) {
+                //误判：认为你在你却不在；如何判断：布隆过滤器中判断存在，数据库和缓存判断不存在
                 //长短链接的一一映射关系
                 String surl = redisTemplate.opsForValue().get(RedisConstant.LONG_URL_KEY + lurlKey);
-                if (surl != null) {//真的会出现这种情况？布隆过滤器和缓存是同步写入的
-                    return CreateShortUrlResp.builder().surl(surl).lurl(lurl).build();
+                if (surl != null) {
+                    return CreateShortUrlResp.builder().surl(surl).lurl(lurl).groupId(groupId).build();
                 }
-                //TODO：进一步查询数据库确认长链接是否存在
+
+                //TODO:假设长链已存在，10w请求为同一长链创建短链，缓存未命中的情况下，大量请求打到数据库
+                //      可以考虑多级缓存！
+                ShortUrl shortUrl = getShortUrlByLurl(lurl);
+                if (shortUrl != null) {
+                    long minutes = TimeUtil.calculateDifference(LocalDateTime.now(), shortUrl.getValidTime(), TimeUnit.MINUTES);
+                    redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurlKey, shortUrl.getSurl(), minutes, TimeUnit.MINUTES);
+                    return CreateShortUrlResp.builder().surl(shortUrl.getSurl()).lurl(lurl).groupId(shortUrl.getGroupId()).build();
+                }
+                //走到这里才是误判
+                log.warn("布隆过滤器误判！lurlKey:{}", lurlKey);
             }
             //1.生成全局唯一id
             long surlId = idGenerationService.generateId();
@@ -167,8 +175,6 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ConditionException("生成短链失败！");
-        } finally {
-            // lock.unlock();
         }
     }
 
@@ -178,6 +184,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
      */
     @Override
     public void redirect(String surl, ServletRequest request, ServletResponse response) {
+        //TODO：检查短链是否过期，过期抛异常：您访问的链接不存在！
         try {
             //获取短链的suffix -> base62 变成唯一id -> 根据唯一id查询长链（缓存？MySQL）
             String suffix = UrlUtil.getShortUrlSuffix(surl);
@@ -215,11 +222,22 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
             String surl = "";
             //如果lurl已经转换过
             if (bloomFilterService.containLUrl(lurlKey)) {
-                //TODO:是否有必要如此做，误判？抛异常？
                 surl = redisTemplate.opsForValue().get(RedisConstant.LONG_URL_KEY + lurlKey);
-                if (surl == null) { //缓存中也没有
-                    return;//相当于continue
+                //缓存中存在，说明已经创建了
+                if (surl != null) {
+                    return;
                 }
+                //缓存中不存在，查询数据库
+                ShortUrl shortUrl = getShortUrlByLurl(lurl);
+                //数据库存在
+                if (shortUrl != null) {
+                    long minutes = TimeUtil.calculateDifference(LocalDateTime.now(), shortUrl.getValidTime(), TimeUnit.MINUTES);
+                    redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurlKey, shortUrl.getSurl(), minutes, TimeUnit.MINUTES);
+                    return;
+                }
+                //走到这，说明缓存和数据库都不存在，说明布隆过滤器误判了
+                log.warn("布隆过滤器误判！lurlKey:{}", lurlKey);
+                //那么会走下面创建的逻辑
             }
             long surlId = idGenerationService.generateId();
             String suffix = Base62Converter.encode(surlId);
@@ -572,6 +590,17 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                 }, sendTime);
             }
         }
+    }
+
+    /**
+     * 根据长链接查询ShortUrl
+     */
+    @Override
+    public ShortUrl getShortUrlByLurl(String lurl) {
+        return baseMapper.selectOne(new LambdaQueryWrapper<ShortUrl>()
+                .eq(ShortUrl::getLurl, lurl)
+                .ge(ShortUrl::getValidTime, LocalDateTime.now())
+                .eq(ShortUrl::getIsDeleted, 0));
     }
 
 

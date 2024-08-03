@@ -86,4 +86,5 @@ public class RedissonConfig {
         bloomFilter.tryInit(1000, 0.01);//设置大小和容错率
         return bloomFilter;
     }
+
 }

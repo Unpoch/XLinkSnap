@@ -74,7 +74,6 @@ public class ShortUrlController {
      */
     @GetMapping("/api/surl/pageShortUrl")
     public Result<PageShortUrlResp<ShortUrl>> pageShortUrl(PageShortUrlReq pageShortUrlReq) {
-        // pageShortUrlReq.setUserId(SaToken获取UserId)？是否需要userId？
         PageShortUrlResp<ShortUrl> pageShortUrlResp = shortUrlService.pageShortUrl(pageShortUrlReq);
         return Result.success(pageShortUrlResp);
     }
@@ -85,7 +84,6 @@ public class ShortUrlController {
     @GetMapping("/api/surl/queryGroupShortUrlCount")
     public Result<List<QueryGroupShortUrlCountResp>> queryGroupShortUrlCount(@RequestParam
                                                                              QueryGroupShortUrlCountReq queryGroupShortUrlCountReq) {
-        // queryGroupShortUrlCountReq.setUserId(token.getUserId);
         List<QueryGroupShortUrlCountResp> result = shortUrlService.queryGroupShortUrlCount(queryGroupShortUrlCountReq);
         return Result.success(result);
     }
@@ -110,6 +108,7 @@ public class ShortUrlController {
 
     /**
      * 短链续期（未过期/过期可续，过期才会被删除，删除可恢复）
+     * TODO：缓存续期？删除缓存还是更新缓存，还是直接删除
      */
     @PostMapping("/api/surl/renewalShortUrl")
     public Result<RenewalShortUrlResp> renewalShortUrl(@RequestBody RenewalShortUrlReq renewalShortUrlReq) {
