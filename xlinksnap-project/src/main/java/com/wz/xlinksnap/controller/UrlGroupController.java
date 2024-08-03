@@ -2,22 +2,15 @@ package com.wz.xlinksnap.controller;
 
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.extension.api.R;
 import com.wz.xlinksnap.common.result.Result;
 import com.wz.xlinksnap.model.dto.req.AddUrlGroupReq;
-import com.wz.xlinksnap.model.dto.req.QueryGroupShortUrlCountReq;
 import com.wz.xlinksnap.model.dto.req.UpdateUrlGroupReq;
 import com.wz.xlinksnap.model.dto.resp.AddUrlGroupResp;
-import com.wz.xlinksnap.model.dto.resp.QueryGroupShortUrlCountResp;
 import com.wz.xlinksnap.service.UrlGroupService;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**

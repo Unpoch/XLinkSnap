@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wz.xlinksnap.common.annotation.DistributedRLock;
+import com.wz.xlinksnap.common.concurrent.ConcurrentJobExecutor;
 import com.wz.xlinksnap.common.constant.MessageConstant;
 import com.wz.xlinksnap.common.constant.RedisConstant;
 import com.wz.xlinksnap.common.exception.ConditionException;
@@ -98,6 +99,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
     @Autowired
     private RedissonClient redissonClient;
 
+    @Autowired
+    private ConcurrentJobExecutor concurrentJobExecutor;
+
     /**
      * 创建短链
      * 二义性检查
@@ -144,11 +148,15 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .setVV(0)
                     .setIP(0);
             baseMapper.insert(shortUrl);
-            //5.添加到布隆过滤器 和 缓存中 TODO：异步执行
-            bloomFilterService.addLUrl(lurlKey);
+            //5.添加到布隆过滤器 和 缓存中
+            concurrentJobExecutor.runAsync(() -> {
+                bloomFilterService.addLUrl(lurlKey);
+            });
             //计算当前时间和有效期的差值（精确到分钟）
             long minutes = TimeUtil.calculateDifference(LocalDateTime.now(), validTime, TimeUnit.MINUTES);
-            redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurlKey, surl, minutes, TimeUnit.MINUTES);
+            concurrentJobExecutor.runAsync(() -> {
+                redisTemplate.opsForValue().set(RedisConstant.LONG_URL_KEY + lurlKey, surl, minutes, TimeUnit.MINUTES);
+            });
             //6.生成CreateShortUrlResp返回
             return CreateShortUrlResp
                     .builder()
@@ -239,16 +247,14 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                     .setIP(0);
             shortUrlList.add(shortUrl);
         });
-        //暂时用Executors创建线程池（不推荐），后续配置线程池类
-        ExecutorService executor = Executors.newFixedThreadPool(5);
         //3.批量插入数据库（异步执行）
-        CompletableFuture.runAsync(() -> {
+        concurrentJobExecutor.runAsync(() -> {
             batchInsertShortUrl(shortUrlList);
-        }, executor);
+        });
         //4.批量添加到缓存和布隆过滤器中（异步执行）
-        CompletableFuture.runAsync(() -> {
+        concurrentJobExecutor.runAsync(() -> {
             batchAddLUrlTOCacheAndBloom(shortUrlList);
-        }, executor);
+        });
         //5.构建响应对象返回
         return BatchCreateShortUrlResp.builder().mappingUrlList(result).groupId(groupId).build();
     }
@@ -497,8 +503,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         //5.发送短信
         if (!StringUtils.isEmpty(email)) {
             if (MessageConstant.SEND_IN_TIME.equals(sendType)) {//立即发送
-                //TODO:异步发送
-                messageService.sendMessageByEmail(subject, msg, email);
+                concurrentJobExecutor.runAsync(() -> {
+                    messageService.sendMessageByEmail(subject, msg, email);
+                });
             } else {//定时发送
                 dynamicTaskService.scheduleTask(() -> messageService.sendMessageByEmail(subject, msg, email),
                         sendTime);
@@ -507,8 +514,9 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         }
         if (!StringUtils.isEmpty(phone)) {
             if (MessageConstant.SEND_IN_TIME.equals(sendType)) {
-                //TODO:异步发送
-                messageService.sendMessageByPhone(subject, msg, phone);
+                concurrentJobExecutor.runAsync(() -> {
+                    messageService.sendMessageByPhone(subject, msg, phone);
+                });
             } else {//定时发送
                 dynamicTaskService.scheduleTask(() -> messageService.sendMessageByEmail(subject, msg, phone),
                         sendTime);
@@ -544,7 +552,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         //5.批量发送信息（异步）
         if (!CollectionUtils.isEmpty(emailList)) {
             if (MessageConstant.SEND_IN_TIME.equals(sendType)) {
-                CompletableFuture.runAsync(() -> {
+                concurrentJobExecutor.runAsync(() -> {
                     messageService.batchSendMessageByEmail(subject, text, emailList);
                 });
             } else {
@@ -555,7 +563,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         }
         if (!CollectionUtils.isEmpty(phoneList)) {
             if (MessageConstant.SEND_IN_TIME.equals(sendType)) {
-                CompletableFuture.runAsync(() -> {
+                concurrentJobExecutor.runAsync(() -> {
                     messageService.batchSendMessageByPhone(subject, text, phoneList);
                 });
             } else {

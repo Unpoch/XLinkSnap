@@ -49,7 +49,7 @@ public class ShortUrlController {
     }
 
     /**
-     * TODO：创建短链
+     * 创建短链
      */
     @PostMapping("/api/surl/createShortUrl")
     public Result<CreateShortUrlResp> createShortUrl(@RequestBody CreateShortUrlReq createShortUrlReq) {
@@ -59,7 +59,7 @@ public class ShortUrlController {
 
 
     /**
-     * TODO：批量创建短链接
+     * 批量创建短链接
      */
     @PostMapping("/api/surl/batchCreateShortUrl")
     public Result<BatchCreateShortUrlResp> batchCreateShortUrl(@RequestBody
@@ -70,7 +70,7 @@ public class ShortUrlController {
     }
 
     /**
-     * TODO：分页查询短链
+     * 分页查询短链
      */
     @GetMapping("/api/surl/pageShortUrl")
     public Result<PageShortUrlResp<ShortUrl>> pageShortUrl(PageShortUrlReq pageShortUrlReq) {

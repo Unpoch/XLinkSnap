@@ -60,7 +60,7 @@ public interface ShortUrlService extends IService<ShortUrl> {
 
     RenewalShortUrlResp renewalShortUrl(RenewalShortUrlReq renewalShortUrlReq);
 
-    List<ShortUrl> getShortUrlListBySurlIds(Set<Long> surlIds)
+    List<ShortUrl> getShortUrlListBySurlIds(Set<Long> surlIds);
 
     void sendMessage(SendMessageReq sendMessageReq);
 
