@@ -118,6 +118,7 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
         try {
             //0.二义性检查，是否已经为该长链生成短链
             //布隆过滤器判断，如果已经存在，则直接查询缓存（数据库）中的返回
+            //TODO ：使用可扩展布隆过滤器（评审中..）
             if (bloomFilterService.containLUrl(lurlKey)) {
                 //误判：认为你在你却不在；如何判断：布隆过滤器中判断存在，数据库和缓存判断不存在
                 //长短链接的一一映射关系

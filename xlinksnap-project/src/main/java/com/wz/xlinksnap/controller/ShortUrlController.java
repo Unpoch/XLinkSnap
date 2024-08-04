@@ -108,7 +108,8 @@ public class ShortUrlController {
 
     /**
      * 短链续期（未过期/过期可续，过期才会被删除，删除可恢复）
-     * TODO：缓存续期？删除缓存还是更新缓存，还是直接删除
+     * TODO：缓存中的短链？删除缓存还是更新缓存，还是直接删除
+     *        布隆过滤器呢
      */
     @PostMapping("/api/surl/renewalShortUrl")
     public Result<RenewalShortUrlResp> renewalShortUrl(@RequestBody RenewalShortUrlReq renewalShortUrlReq) {
