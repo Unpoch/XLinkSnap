@@ -67,4 +67,6 @@ public interface ShortUrlService extends IService<ShortUrl> {
     void batchSendMessage(BatchSendMessageReq batchSendMessageReq);
 
     ShortUrl getShortUrlByLurl(String lurl);
+
+    List<ShortUrl> getShortUrlListByLurlList(List<String> lurlList);
 }

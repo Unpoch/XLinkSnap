@@ -609,6 +609,17 @@ public class ShortUrlServiceImpl extends ServiceImpl<ShortUrlMapper, ShortUrl> i
                 .eq(ShortUrl::getIsDeleted, 0));
     }
 
+    /**
+     * 根据lurl集合查询ShortUrl集合
+     */
+    @Override
+    public List<ShortUrl> getShortUrlListByLurlList(List<String> lurlList) {
+        return baseMapper.selectList(new LambdaQueryWrapper<ShortUrl>()
+                .in(ShortUrl::getLurl, lurlList)
+                .ge(ShortUrl::getValidTime, LocalDateTime.now())
+                .eq(ShortUrl::getIsDeleted, 0));
+    }
+
 
     /**
      * 根据短链id获取短链对象

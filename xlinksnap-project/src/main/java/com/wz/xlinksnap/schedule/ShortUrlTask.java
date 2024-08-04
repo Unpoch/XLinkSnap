@@ -30,6 +30,7 @@ public class ShortUrlTask {
         expiredShortUrlList.forEach(shortUrl -> {
             shortUrl.setIsDeleted(1);//逻辑删除
         });
+        //TODO：删除布隆过滤器和缓存
         //3.批量更新数据库
         shortUrlService.batchUpdateShortUrl(expiredShortUrlList);
     }
